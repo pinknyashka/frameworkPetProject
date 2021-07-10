@@ -1,0 +1,16 @@
+<resources>
+
+    <string name="app_name">framework2d</string>
+    <string name="menu_settings">Settings</string>
+    <string name="title_activity_main">Battle checkers</string>
+    <string name="title_activity_play_ground">Play Ground</string>
+    <string name="title_play">Play</string>
+    <string name="my_package_name">ru.fungames.checkers</string>
+    <string name="map_preview">Map preview</string>
+    <string name="clear_string"> </string>
+    <string name="map_name">linkine</string>
+    <string name="title_to_sd">copy to sd</string>
+    <string name="title_delete">delete</string>
+    <string name="available_maps">Available maps</string>
+    
+</resources>

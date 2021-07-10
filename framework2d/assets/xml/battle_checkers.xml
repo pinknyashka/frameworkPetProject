@@ -1,0 +1,256 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<map version = "1.0" name = "battle checkers" parallel = "false" preview = "checker_01.png">
+    <direct name = "physical">
+        <handler name = "collisions" ph_unit = "DisplayWidth/1024" limit = "70" impulse_limit = "50">
+            <interaction name = "circles"/>
+            <context name = "movement" value = "directImpulse"/>
+            <context name = "isEnabled" value = "exist"/>
+        </handler>
+        <handler name = "environments">
+            <interaction name = "environmentsBody"/>
+            <context name = "movement" value = "directImpulse"/>
+            <context name = "isEnabled" value = "exist"/>
+        </handler>
+    </direct>
+    <direct name = "input">
+    	<handler name = "touchScreen"> 
+            <context name = "touched" value = "fingerTouched"/>
+    	</handler>  
+    	<handler name = "touchSelect">
+    	    <sub name = "directTouch"/>
+    	    <sub name = "zoomTouch"/>
+    	    <sub name = "dragTouch"/>
+            <context name = "shotDirect" value = "directImpulse"/>
+    	    <context name = "rotateDirect" value = "directDraw"/>
+            <context name = "isActive" value = "fingerTouched"/>
+    	</handler>
+    	<handler name = "motion">
+            <context name = "directTap" value = "shot"/>
+            <context name = "isLongTap" value = "long"/>
+       	</handler>
+    </direct>
+    <direct name = "output">
+    	<handler name = "draw">
+    	    <sub name = "spriteDraw"/>
+    	    <sub name = "drawText"/>
+    	    <sub name = "shadows"/>
+    	    <sub name = "relief"/>
+    	    <sub name = "lights"/>
+    	    <sub name = "basicGraphical"/>
+            <!-- <context name = "isVisible" value = "exist"/> -->
+    	</handler>
+    	<handler name = "animation">
+            <context name = "currentValue" value = "transparency"/>
+    	</handler>
+    	<handler name = "cameras">
+            <context name = "isActive" value = "fingerTouched"/>
+    	</handler>
+    </direct>
+    <direct name = "logical"> 
+    	<handler name = "fields">
+    	    <context name = "inField" value = "exist"/>
+    	</handler>
+    	<handler name = "grids">
+    	    <context name = "cellPosition" value = "lposition"/>
+       	</handler>
+    	<handler name = "respawns">
+    	    <context name = "respawningPosition" value = "lposition"/>
+            <context name = "respawningTrigger" value = "finishRound"/>
+    	</handler>
+    	<handler name = "players">
+            <context name = "isCurrentlyControlled" value = "selected"/>
+            <context name = "isControlled" value = "clikable"/>
+            <context name = "isExist" value = "exist"/>
+            <context name = "ownerFinishedRoundTrigger" value = "finishRound"/>
+        </handler>
+    </direct>
+    
+    <replace name = "width" value = "DisplayWidth"/> <!--type DisplayWidth to read display width from res-->
+	<replace name = "height" value = "DisplayHeight"/> <!--type DisplayHeight to read display height from res-->
+	
+	<replace name = "cllsz" value = "width/9"/> <!-- cell size -->
+	<replace name = "tpscrn" value = "(height-width)/2+cllsz"/> <!-- top screen -->
+	<replace name = "btmscrn" value = "(height+width)/2-cllsz"/> <!-- bottom screen -->
+	<replace name = "checkerradius" value = "width/24"/>
+	<replace name = "blocklenght" value = "4"/>
+	<replace name = "txtsz" value = "width/64"/>
+	
+	<camera name = "background" 
+	    posx = "width/2" posy = "height/2" 
+	    sizex = "width" sizey = "height" 
+	    touchable = "false"
+	    zoom = "8" angle = "22" cacheable = "false"/>
+	
+	<object name = "basecam" single = "true">
+		<camera name = "basecam" 
+		    posx = "width/2+5" posy = "height/2-15" 
+		    eyex = "width/2" eyey = "height/2"
+		    sizex = "width+checkerradius*2" sizey = "width+checkerradius*2" 
+		    zoom = "1" angle = "0" motionblur = "true"
+		    cacheable = "true" cachelayer = "1"/>
+		<zoomer posx = "width/2+5" posy = "height/2-15" angle = "0"
+		    sizex = "height+checkerradius*2" sizey = "height+checkerradius*2">
+            <context name = "realizePosition" value = "position"/>
+        </zoomer>
+	</object>
+					
+    <object name = "background" single = "true">
+        <pict sprite = "board1" layer = "-2"  				   		    
+            posx = "width/2" posy = "height/2" 
+   		    sizex = "width" sizey = "width"/>
+        <rec camera = "background"/> 
+	</object>
+	
+	<object name = "board" single = "true">
+   		<surface 
+   		    posx = "width/2" posy = "height/2" 
+   		    sizex = "width" sizey = "width" 
+   		    resistance = "0.4"/>
+   		<pict 
+   		    posx = "width/2" posy = "height/2" 
+   		    sizex = "width" sizey = "width" layer = "-1" sprite = "board1"/>
+		<rec camera = "basecam"/>
+		<grid 
+		    name = "white_respawn"
+		    posx = "width/2" posy = "height/2"
+		    lposx = "0" lposy = "0-cllsz*7/2" langle = "3.14" 
+   		    sizex = "cllsz*8" sizey = "cllsz"
+   		    columns = "8" rows = "1">
+		    <context name = "respawnRow" value = "whiteWonRounds"/>
+		</grid>
+		<grid 
+		    name = "black_respawn" 
+		    posx = "width/2" posy = "height/2"
+		    lposx = "0" lposy = "cllsz*7/2" 
+		    sizex = "cllsz*8" sizey = "cllsz"
+		    columns = "8" rows = "1">
+		    <context name = "respawnRow" value = "blackWonRounds"/>
+		</grid>
+		<field 
+		    name = "board"
+		    posx = "width/2" posy = "height/2" 
+   		    sizex = "width" sizey = "width">
+   		    <context name = "gotMovingUnits" value = "isInProgress"/>
+   		</field>
+		<player name = "p1" turn = "true" 
+		    wait = "true" 
+		    turnToWinner = "true" 
+		    gavePointsWhenEnemyHaveNoPoints = "true" 
+		    pointsToVictory = "7" 
+		    flawlessMode = "true">
+		    <context name = "wonRounds" value = "whiteWonRounds"/>
+		</player>
+		<player name = "p2" turn = "false" 
+		    wait = "true"  
+		    turnToWinner = "true" 
+		    gavePointsWhenEnemyHaveNoPoints = "true" 
+		    pointsToVictory = "7" 
+		    flawlessMode = "true">
+			<context name = "wonRounds" value = "blackWonRounds"/>
+		</player>
+	</object>
+
+	<object name = "light" single = "true">
+   		<pict 
+   		    posx = "width/2" posy = "height/2" posz = "width/16"
+   		    radius = "checkerradius/2" 
+   		    sprite = "valid_checker" layer = "3"/>
+   		<light posx = "width/2" posy = "height/2" posz = "width/16" color = "#FFFF00"/>		 
+   		<drag posx = "width/2" posy = "height/2" posz = "width/16" radius = "checkerradius/2"/>  		
+   		<rec camera = "basecam"/>
+	</object>
+				 			
+    <prototype name = "checkerwhite">
+   		<circle angle = "3.14" radius = "checkerradius" mass = "0.1">
+   		</circle>
+		<body roughness = "0.2">
+		</body>
+		<shadow posz = "0" geometry:type = "v_cylinder" geometry:radius = "checkerradius" geometry:height = "2.0" 
+		    	rotatable = "false" layer = "0" radius = "checkerradius*2" ltransparency = "0.3">
+			<context name = "localPos" value = "shadowAngle"/>
+		</shadow>
+   		<pict radius = "checkerradius" sprite = "firehead_sprite" layer = "2" angle = "3.14" spriteCollumnsNum = "3"/>
+   		
+   		<relief rotatable = "false" radius = "checkerradius+1" layer = "2.3" 
+   		    lightmap = "checker_relief_sprite_3" spriteCollumnsNum = "5" spriteRowsNum = "4" ltransparency = "1.0">
+			<context name = "localPos" value = "reliefAngle"/>
+		</relief>
+		<pict radius = "checkerradius" sprite = "valid_checker_sprite" layer = "3" spriteCollumnsNum = "6" rotatable = "false" ltransparency = "0.5" lvisible = "true">
+		    <context name = "currentSpriteNo" value = "validSprite"/>
+		    <context name = "isLocalVisible" value = "clikable"/>
+		</pict>
+		<pict radius = "checkerradius" sprite = "power" layer = "4" lrotatable = "true" rotatable = "false" ltransparency = "0" lvisible = "true">
+		    <context name = "localPos" value = "directDraw"/>
+		    <context name = "localTransparency" value = "power"/>
+		    <context name = "isLocalVisible" value = "selected"/>
+		</pict>
+		<animation value = "0.0" start = "0.0" step = "1.0" interval = "0.2" final = "5.0">
+		    <context name = "activation" value = "clikable"/>
+			<context name = "currentValue" value = "validSprite"/>
+		</animation>
+		<animation value = "1.0" start = "1.0" step = "0-0.2" interval = "0.1" final = "0.0">
+  	    	<context name = "activation" value = "exist"/>
+  	    </animation>
+		<d_touch type = "direct" inScreenProportion = "true" radius = "checkerradius" clikable = "true">
+		    <context name = "lenght" value = "power"/>
+		</d_touch>			
+		<unit field = "board"/>
+		<rec camera = "basecam"/>
+		<ownership owner = "p1"/>
+		<item grid = "white_respawn" raw = "0"/>
+		<l_respawn/>
+	</prototype>	
+		
+	<prototype name = "checkerblack">
+		<circle radius = "checkerradius" mass = "0.1" static="false">
+		    <context name = "contactPoint" value = "pointPosition"/>
+		</circle> 
+
+		<body position:x = "0" roughness = "0.2">
+		</body>
+		<shadow posz = "0" geometry:type = "v_cylinder" geometry:radius = "checkerradius" geometry:height = "2.0" 
+		    	rotatable = "false" layer = "0" radius = "checkerradius*2" ltransparency = "0.3">
+			<context name = "localPos" value = "shadowAngle"/>
+		</shadow> 
+		<pict radius = "checkerradius" sprite = "bonehead" layer = "2"/>
+		<relief rotatable = "false" posz = "2.0"
+		    radius = "checkerradius+1" layer = "2.3" 
+		    lightmap = "checker_relief_sprite_3" spriteCollumnsNum = "5" spriteRowsNum = "4" ltransparency = "1.0">
+			<context name = "localPos" value = "reliefAngle"/>
+		</relief>
+		<pict radius = "checkerradius" sprite = "valid_checker_sprite" layer = "3" spriteCollumnsNum = "6" rotatable = "false" ltransparency = "0.5" lvisible = "false">
+		    <context name = "currentSpriteNo" value = "validSprite"/>
+		    <context name = "isLocalVisible" value = "clikable"/>
+		</pict>
+		<pict radius = "checkerradius" sprite = "power" layer = "4" rotatable = "false" lrotatable = "true" ltransparency = "0" lvisible = "true">
+		    <context name = "localPos" value = "directDraw"/>
+		    <context name = "localTransparency" value = "power"/>
+		    <context name = "isLocalVisible" value = "selected"/>
+		</pict>
+		<animation value = "0.0" start = "0.0" step = "1.0" interval = "0.2" final = "5.0">
+		    <context name = "activation" value = "clikable"/>
+			<context name = "currentValue" value = "validSprite"/>
+		</animation>
+		<animation value = "1.0" start = "1.0" step = "0-0.2" interval = "0.1" final = "0.0">
+  	    	<context name = "activation" value = "exist"/>
+	    </animation>
+		<d_touch type = "direct" inScreenProportion = "true" radius = "checkerradius" clikable = "false">
+		    <context name = "lenght" value = "power"/>
+		</d_touch>
+		<unit field = "board"/>
+		<rec camera = "basecam"/>
+		<ownership owner = "p2"/>
+		<item grid = "black_respawn" raw = "7"/>
+		<l_respawn/>
+	</prototype>
+											    	    
+    <cycle param = "posx" num = "8" dif = "cllsz">
+  	   		<respawn name = "checkerwhite" posx = "cllsz" posy = "tpscrn"/>
+  	   		<!-- <respawn name = "checkerwhite" posx = "cllsz*2" posy = "tpscrn+cllsz"/> -->
+  	   		<!-- <respawn name = "checkerwhite" posx = "cllsz" posy = "tpscrn+cllsz*2" angle = "6.28"/> -->
+  	   		<respawn name = "checkerblack" posx = "cllsz" posy = "btmscrn"/> 
+  	   		<!-- <respawn name = "checkerblack" posx = "cllsz*2" posy = "btmscrn-cllsz"/> -->
+  	   		<!-- <respawn name = "checkerblack" posx = "cllsz" posy = "btmscrn-cllsz*2"/> -->
+  	   	</cycle>
+
+</map>

@@ -1,0 +1,463 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<map version = "1.0" name = "battle checkers with blocks" parallel = "false" preview = "checker_01.png">
+    
+	<direct package = "physics" objectName = "DirectPhysicsStandart">
+        <handler package = "collisions" objectName = "shapes.HandlerShapesCollisions" ph_unit = "DisplayWidth/1024" interval_limit = "70" impulse_limit = "50">
+            <interaction package = "circles" objectName = "shapes.InteractionCircles"/>
+            <interaction package = "circlesBlocks" objectName = "shapes.InteractionCirclesBlocks"/>
+            <interaction package = "blocks" objectName = "shapes.InteractionBlocks"/>
+            <context name = "impulse" value = "directImpulse"/>
+            <context name = "isEnabled" value = "exist"/>
+        </handler>
+        <handler package = "environments" objectName = "medium.HandlerMediums">
+            <interaction package = "environmentsBody" objectName = "medium.InteractionMediumBody"/>
+            <context name = "isEnabled" value = "exist"/>
+        </handler>
+    </direct>
+    
+    <direct package = "input" objectName = "DirectInputStandart">
+    	<handler package = "touchScreen" objectName = "touches.HandlerTouchScreen"> 
+            <context name = "touched" value = "fingerTouched"/>
+    	</handler>  
+    	<handler package = "touchSelect" objectName = "touches.HandlerTouchSelect">
+    	    <sub package = "pointers" objectName = "touches.SubPointer"/>
+    	    <sub package = "directTouch" objectName = "touches.SubDirectedTouch"/>
+    	    <sub package = "zoomTouch" objectName = "touches.SubZoomTouches"/>
+    	    <sub package = "dragTouch" objectName = "touches.SubDrag"/>
+    	    <sub package = "switcher" objectName = "touches.SubSwitcher"/>
+    	    <context name = "shotDirect" value = "directImpulse"/>
+    	    <context name = "rotateDirect" value = "directDraw"/>
+            <context name = "isTouches" value = "fingerTouched"/>
+    	</handler>
+    	<handler package = "motion" objectName = "touches.HandlerMotion">
+            <context name = "directTap" value = "shot"/>
+            <context name = "isLongTap" value = "long"/>
+       	</handler>
+    </direct>
+    
+    <direct package = "output" objectName = "DirectOutputStandart">
+    	<handler package = "draw" objectName = "graphical.HandlerDraw">
+    	    <sub package = "spriteDraw" objectName = "graphical.SubSpriteDraw"/>
+    	    <sub package = "drawText" objectName = "graphical.SubDrawText"/>
+    	    <sub package = "shadows" objectName = "shadows.SubShadows"/>
+    	    <sub package = "shadowLayers" objectName = "shadows.SubShadowLayers"/>
+    	    <sub package = "relief" objectName = "shadows.SubRelief"/>
+    	    <sub package = "lights" objectName = "shadows.SubLight"/>
+    	    <sub package = "basicGraphical" objectName = "graphical.SubBasicGraphical"/>
+            <!-- <context name = "isVisible" value = "exist"/> -->
+    	</handler>
+    	<handler package = "animation" objectName = "graphical.HandlerAnimation">
+            <context name = "currentValue" value = "transparency"/>
+    	</handler>
+    	<handler package = "cameras" objectName = "graphical.HandlerCameras">
+            <context name = "isTouches" value = "fingerTouched"/>
+    	</handler>
+    </direct>
+    
+    <direct package = "logic" objectName = "DirectLogicStandart"> 
+    	<handler package = "fields" objectName = "fields.HandlerFields">
+    	    <context name = "inField" value = "exist"/>
+    	</handler>
+    	<handler package = "grids" objectName = "grids.HandlerGrids">
+    	    <context name = "cellPosition" value = "lposition"/>
+       	</handler>
+    	<handler package = "respawns" objectName = "respawns.HandlerRespawns">
+    	    <context name = "respawningPosition" value = "lposition"/>
+            <context name = "respawningTrigger" value = "finishRound"/>
+    	</handler>
+    	<handler package = "players" objectName = "players.HandlerPlayers">
+            <context name = "isCurrentlyControlled" value = "isSelected"/>
+            <context name = "isControlled" value = "isClikable"/>
+            <context name = "isExist" value = "exist"/>
+            <context name = "finishedRoundTrigger" value = "finishRound"/>
+        </handler>
+    	<!-- <handler name = "phases"/> -->
+    </direct>
+    
+    
+    
+    <replace name = "width" value = "DisplayWidth"/> <!--type DisplayWidth to read display width from res-->
+	<replace name = "height" value = "DisplayHeight"/> <!--type DisplayHeight to read display height from res-->
+	
+	<replace name = "cllsz" value = "width/9"/> <!-- cell size -->
+	<replace name = "tpscrn" value = "(height-width)/2+cllsz"/> <!-- top screen -->
+	<replace name = "btmscrn" value = "(height+width)/2-cllsz"/> <!-- bottom screen -->
+	<replace name = "checkerradius" value = "width/24"/>
+	<replace name = "blocklenght" value = "4"/>
+	<replace name = "txtsz" value = "width/64"/>
+	
+	<camera name = "background" 
+	    position:x = "width/2" position:y = "height/2" position:alpha = "22"  
+	    recordingAreaSize:x = "width" recordingAreaSize:y = "height" 
+	    isTouchable = "false"
+	    zoom = "8.0" cacheable = "false"/>
+	
+	<object name = "basecam" single = "true">
+		<camera name = "basecam" 
+		    position:x = "width/2+5" position:y = "height/2-15" position:alpha = "0" 
+		    eyePos:x = "width/2" eyePos:y = "height/2"
+		    recordingAreaSize:x = "width+checkerradius*2" recordingAreaSize:y = "width+checkerradius*2" 
+		    zoom = "1.0" motionblur = "true"
+		    cacheable = "true" cachelayer = "1"/>
+		<zoomer position:x = "width/2+5" position:y = "height/2-15" position:alpha = "0"
+		    realizePosition:x = "width/2+5" realizePosition:y = "height/2-15" realizePosition:alpha = "0" 
+		    zoomMax = "2.0" zoomMin = "0.5"
+		    size:x = "height+checkerradius*2" size:y = "height+checkerradius*2">
+            <context name = "realizePosition" value = "position"/>
+        </zoomer>
+	</object>
+					
+	<phase name = "game" repeat = "true" toStart = "true" toOver = "true" toRepeat = "true">
+   	    
+	    <object name = "background" single = "true">
+	        <pict spriteName = "board1" layer = "-3"
+	            position:x = "width/2" position:y = "height/2" 
+	   		    size:x = "width" size:y = "width"/>
+	        <rec cameraman = "background"/> 
+		</object>
+		
+	    <phase name = "createboard" repeat = "false" toStart = "true" toOver = "true" toRepeat = "false">
+	     
+			<object name = "board" single = "true">
+		   		<surface 
+		   		    position:x = "width/2" position:y = "height/2" 
+		   		    size:x = "width" size:y = "width" 
+		   		    slowingEffect = "0.4"/>
+				<shadow position:x = "width/2" position:y = "height/2" position:z = "0" 
+			        	geometry:type = "block" geometry:width = "width" geometry:depth = "width" geometry:height = "5.0" 
+				    	layer = "-1">
+					<context name = "localPos" value = "shadowAngle"/>
+				</shadow>
+				<pict 
+		   		    position:x = "width/2" position:y = "height/2" 
+		   		    size:x = "width" size:y = "width" layer = "-1" spriteName = "board1"/>
+		   		<!-- <shadow_layer position:x = "width/2" position:y = "height/2" position:z = "0" 
+			        	geometry:type = "block" geometry:width = "width" geometry:depth = "width" geometry:height = "5.0" 
+			        	size::x = "width" size:y = "width"
+				    	layer = "-1">
+					<context name = "localPos" value = "shadowAngle"/>
+				</shadow_layer> -->
+		   		<rec cameraman = "basecam"/>
+		   		<grid 
+				    name = "board"
+				    position:x = "width/2" position:y = "height/2"
+		   		    size:x = "cllsz*8" size:y = "cllsz*8"
+		   		    columnsNumber = "8" rowsNumber = "8">
+				</grid>
+				<cell_group 
+				    name = "white_respawn"
+				    gridName = "board"
+				    itemName = "white_checker"
+				    leaderColumn = "0" leaderRow = "0"
+				    relativeCells = "%s0,0,1,1,2,0,3,1,4,0,5,1,6,0,7,1">
+				    <context name = "leaderRow" value = "whiteWonRounds"/>
+				</cell_group>
+				<cell_group 
+				    name = "black_respawn" 
+				    gridName = "board"
+				    itemName = "black_checker"
+				    leaderColumn = "0" leaderRow = "7"
+				    relativeCells = "%s0,-1,1,0,2,-1,3,0,4,-1,5,0,6,-1,7,0">
+				    <context name = "leaderRow" value = "blackWonRounds"/>
+				</cell_group>
+				<field 
+				    name = "board"
+				    position:x = "width/2" position:y = "height/2" 
+		   		    size:x = "width" size:y = "width">
+		   		    <context name = "gotMovingUnits" value = "isInProgress"/>
+		   		</field>
+				<player name = "p1" 
+				    gotAccess = "true" 
+				    isWaitForTurnOver = "true" 
+				    isGetTurnIfWon = "true" 
+				    winGavePointsOnlyIfEnemyHaveNoPoints = "true"
+				    wonRounds = "0"
+				    startPoints = "0"  
+				    pointsGaveForRoundVictory = "1" 
+				    pointsNeedToVictory = "6" 
+				    isGetTurnIfFlawless = "true">
+				    <context name = "wonRounds" value = "whiteWonRounds"/>
+				</player>
+				<player name = "p2" gotAccess = "false" 
+				    isWaitForTurnOver = "true"  
+				    isGetTurnIfWon = "true" 
+				    winGavePointsOnlyIfEnemyHaveNoPoints = "true"
+				    pointsGaveForRoundVictory = "-1" 
+				    pointsLostForRoundLose = "-1"
+				    wonRounds = "7"
+				    startPoints = "7"  
+				    pointsNeedToVictory = "1" 
+				    isGetTurnIfFlawless = "true">
+					<context name = "wonRounds" value = "blackWonRounds" transferValue = "8-this"/>
+				</player>
+				<respawner name = "white_respawner" number = "8"/>
+				<respawner name = "black_respawner" number = "8"/>
+			</object>
+
+			 <object name = "block1" single = "true">
+		   		<block isStatic = "true" 
+		   		    position:x = "width/2" position:y = "tpscrn-cllsz" position:alpha = "0.076"
+		   		    width = "blocklenght*cllsz" height = "cllsz"
+		   		    weight = "1"/>
+		   		<shadow position:x = "width/2" position:y = "tpscrn-cllsz" position:z = "0" position:alpha = "0.076"
+			        	geometry:type = "block" geometry:width = "blocklenght*cllsz" geometry:depth = "cllsz" geometry:height = "5.0" 
+				    	layer = "0">
+					<context name = "localPos" value = "shadowAngle"/>
+				</shadow>
+		   		<pict 
+		   		    position:alpha = "0.076"
+		   		    position:x = "width/2" position:y = "tpscrn-cllsz" 
+		   		    size:x = "blocklenght*cllsz" size:y = "cllsz" 
+		   		    spriteName = "blackblock" layer = "2" blured = "false"/>		   		
+		   		<rec cameraman = "basecam"/>
+			</object>
+					
+			 <object name = "block2" single = "true">
+		   		<block isStatic = "true" 
+		   		    position:alpha = "0-0.076"
+		   		    position:x = "width/2" position:y = "btmscrn+cllsz"
+		   		    width = "blocklenght*cllsz" height = "cllsz"
+		   		    weight = "1"/>
+		   		<shadow position:x = "width/2" position:y = "btmscrn+cllsz" position:z = "0" position:alpha = "0-0.076"
+			        	geometry:type = "block" geometry:width = "blocklenght*cllsz" geometry:depth = "cllsz" geometry:height = "5.0" 
+				    	layer = "0">
+					<context name = "localPos" value = "shadowAngle"/>
+				</shadow>
+		   		<pict 
+		   		    position:alpha = "0-0.076"
+		   		    position:x = "width/2" position:y = "btmscrn+cllsz" 
+		   		    size:x = "blocklenght*cllsz" size:y = "cllsz" 
+		   		    spriteName = "blackblock" layer = "2" blured = "false"/>		   		
+		   		<rec cameraman = "basecam"/>
+			</object>
+			
+			<!-- <object name = "block5" single = "true">
+		   		<block isStatic = "false" 
+		   		    position:x = "width/2" position:y = "height/2"
+		   		    width = "4*cllsz" height = "cllsz"
+		   		    weight = "50"/>
+		   		<body roughness = "0.9"/>
+		   		<d_touch position:x = "width/2" position:y = "height/2" type = "direct" isInScreenProportion = "true" radius = "cllsz" clikable = "true"/>
+		   		<pict 
+		   		    position:x = "width/2" position:y = "height/2" 
+		   		    size:x = "4*cllsz" size:y = "cllsz" 
+		   		    spriteName = "blackblock" layer = "3" blured = "false"/>		   		
+		   		<rec cameraman = "basecam"/>
+			</object> -->
+			
+			<object name = "block3" single = "true">
+		   		<block isStatic = "false" 
+		   		    position:x = "13*width/18" position:y = "height/2"
+		   		    width = "checkerradius*2" height = "checkerradius*2"
+		   		    weight = "1.3">
+		   			<context name = "contactPoint" value = "pointPosition"/>
+		   		</block>
+			    <body position:x = "13*width/18" position:y = "height/2" roughness = "0.9"/>
+			    <d_touch position:x = "13*width/18" position:y = "height/2"
+			        isInScreenProportion = "true" proportion = "width/4" radius = "checkerradius" isClikable = "true"/>
+			    <unit position:x = "13*width/18" position:y = "height/2"
+			        fieldName = "board"/>
+			    <shadow position:x = "13*width/18" position:y = "height/2" position:z = "0" 
+			        	geometry:type = "block" geometry:width = "checkerradius*2" geometry:depth = "checkerradius*2" geometry:height = "5.0" 
+				    	layer = "0">
+					<context name = "localPos" value = "shadowAngle"/>
+					<context name = "isVisible" value = "exist"/>
+				</shadow>
+		   		<pict 
+		   		    position:x = "13*width/18" position:y = "height/2" 
+		   		    size:x = "checkerradius*2" size:y = "checkerradius*2" 
+		   		    spriteName = "blackblock" layer = "2" blured = "false">
+		   			<context name = "isVisible" value = "exist"/>
+		   		</pict>		   		
+				<pict position:x = "13*width/18" position:y = "height/2" 
+				    radius = "checkerradius/8" spriteName = "point" layer = "3" isRotatable = "false" localTransparency = "1" isLocalVisible = "true">
+				    <context name = "position" value = "pointPosition"/>
+				</pict>		   		
+		   		<rec cameraman = "basecam"/>
+			</object>
+			
+			<object name = "block4" single = "true">
+		   		<block isStatic = "false" 
+		   		    position:x = "5*width/18" position:y = "height/2" position:z = "0"
+		   		    width = "cllsz*2" height = "cllsz*2"
+		   		    weight = "5.2">
+		   			<context name = "contactPoint" value = "pointPosition"/>
+		   		</block>
+		   		<body position:x = "13*width/18" position:y = "height/2" roughness = "0.9"/>
+			    <d_touch position:x = "5*width/18" position:y = "height/2"
+			        isInScreenProportion = "true" proportion = "width/4" radius = "cllsz" isClikable = "true"/>
+			    <unit position:x = "5*width/18" position:y = "height/2"
+			        fieldName = "board"/>
+			    <shadow position:x = "5*width/18" position:y = "height/2" position:z = "0" 
+			        	geometry:type = "block" geometry:width = "cllsz*2" geometry:depth = "cllsz*2" geometry:height = "5.0" 
+				    	layer = "0">
+					<context name = "localPos" value = "shadowAngle"/>
+					<context name = "isVisible" value = "exist"/>
+				</shadow>
+		   		<pict 
+		   		    position:x = "5*width/18" position:y = "height/2" 
+		   		    size:x = "blocklenght*cllsz/2" size:y = "blocklenght*cllsz/2" 
+		   		    spriteName = "blackblock" layer = "2" blured = "false">
+		   			<context name = "isVisible" value = "exist"/>
+		   		</pict>
+		   		<rec cameraman = "basecam"/>
+			</object>
+			
+			<object name = "light" single = "true">
+		   		<pict 
+		   		    position:x = "width/2" position:y = "height/2" position:z = "width/16"
+		   		    size:x = "checkerradius/4" size:y = "checkerradius/4" 
+		   		    isCircle = "true" radius = "checkerradius/2"
+		   		    spriteName = "valid_checker" layer = "3">
+				    <context name = "isLocalVisible" value = "movable"/>
+		   		</pict>
+		   		<light position:x = "width/2" position:y = "height/2" position:z = "width/16"
+		   		    radius = "cllsz"
+		   		    color = "#F1D396" intensity = "0.9" diffuse = "0.3"/> 
+		   		<drag position:x = "width/2" position:y = "height/2" position:z = "width/16" radius = "checkerradius/2"> 
+		   		    <context name = "isClikable" value = "movable"/>
+		   		</drag>  		
+		   		<switcher position:x = "2*checkerradius" position:y = "2*checkerradius" radius = "2*checkerradius" isOn = "true">
+		   		    <context name = "position" value = "switcherPosition"/>
+		   		    <context name = "isOn" value = "movable"/>
+		   		</switcher>
+		   		<rec cameraman = "basecam"/>
+			</object>
+						 			
+		    <prototype name = "checkerwhite">
+		   		<circle position:alpha = "3.14" radius = "checkerradius" weight = "0.1">
+		   		</circle>
+				<body roughness = "0.2">
+				</body>
+				
+				<shadow position:z = "0" geometry:type = "v_cylinder" geometry:radius = "checkerradius" geometry:height = "2.0" 
+				    	isRotatable = "false" layer = "0">
+					<context name = "localPos" value = "shadowAngle"/>
+				</shadow>
+		   		<!--<pict radius = "checkerradius*2" spriteName = "shadow" layer = "0" 
+		   					isRotatable = "false" localTransparency = "0.1" blured = "false" position:alpha = "3.14"/>-->
+		   		<pict radius = "checkerradius" spriteName = "firehead_sprite" layer = "2" position:alpha = "3.14" spriteCollumnsNum = "3"/>
+		   		
+		   		<relief isRotatable = "false" size:x = "checkerradius*2+1" size:y = "checkerradius*2+1" layer = "2.3" 
+		   		    reliefName = "checker_relief_sprite_3" spriteCollumnsNum = "5" spriteRowsNum = "4" localTransparency = "1.0">
+					<context name = "localPos" value = "reliefAngle"/>
+				</relief>
+				<!-- <pict radius = "checkerradius" spriteName = "checker_relief" layer = "2.01" isRotatable = "false"/> -->
+				<pict radius = "checkerradius" spriteName = "valid_checker_sprite" layer = "3" spriteCollumnsNum = "3" spriteRowsNum = "2"
+				     isRotatable = "false" localTransparency = "0.5" isLocalVisible = "true">
+				    <context name = "currentSpriteNo" value = "validSprite"/>
+				    <context name = "isLocalVisible" value = "isClikable"/>
+				</pict>
+				<pict radius = "checkerradius" spriteName = "power" layer = "4" isLocalRotatable = "true" isRotatable = "false" localTransparency = "0" isLocalVisible = "true">
+				    <context name = "localPos" value = "directDraw"/>
+				    <context name = "localTransparency" value = "power"/>
+				    <context name = "isLocalVisible" value = "isSelected"/>
+				</pict>
+				<text text = "white" fontSize = "txtsz" color = "black"/>
+				<animation currentValue = "0.0" startValue = "0.0" step = "1.0" interval = "0.2" finalValue = "5.0">
+				    <context name = "activation" value = "clikable"/>
+					<context name = "currentValue" value = "validSprite"/>
+				</animation>
+				<animation currentValue = "1.0" startValue = "1.0" step = "0-0.2" interval = "0.1" finalValue = "0.0">
+    	    		<context name = "activation" value = "exist"/>
+    	    	</animation>
+    	    	
+				<d_touch isInScreenProportion = "true" proportion = "width/4" radius = "checkerradius" isClikable = "true">
+				    <context name = "lenght" value = "power"/>
+				</d_touch>	
+						
+				<unit fieldName = "board"/>
+				<rec cameraman = "basecam"/>
+				<ownership ownerName = "p1"/>
+				<item name = "white_checker" gridName = "white_respawn"/>
+				<l_respawn respawnerName = "white_respawner"/>
+				<!-- <action type = "1" phase = "battle" changingProperty = "position:y" newValue = "tpscrn + 1 * cllsz" />  -->
+				
+			</prototype>	
+				
+			<prototype name = "checkerblack">
+			    
+				<circle radius = "checkerradius" weight = "0.1" isStatic = "false">
+				    <context name = "contactPoint" value = "pointPosition"/>
+				</circle> 
+				<!-- <block isStatic = "false" 
+		   		    size:x = "checkerradius*2" size:y = "checkerradius*2"
+		   		    weight = "13">
+				    <context name = "contactPoint" value = "pointPosition"/>
+				</block> -->
+				<body roughness = "0.2">
+				</body>
+				
+				<shadow position:z = "0" geometry:type = "v_cylinder" geometry:radius = "checkerradius" geometry:height = "2.0" 
+				    	isRotatable = "false" layer = "0">
+					<context name = "localPos" value = "shadowAngle"/>
+				</shadow> 
+				<!--<pict radius = "checkerradius*2" spriteName = "shadow" 
+							layer = "0" isRotatable = "false" localTransparency = "0.1" blured = "false"/> -->
+				<pict radius = "checkerradius" spriteName = "bonehead" layer = "2"/>
+				<relief isRotatable = "false" position:z = "2.0" size:x = "checkerradius*2+1" size:y = "checkerradius*2+1" layer = "2.3" 
+				    reliefName = "checker_relief_sprite_3" spriteCollumnsNum = "5" spriteRowsNum = "4" localTransparency = "1.0">
+					<context name = "localPos" value = "reliefAngle"/>
+				</relief>
+				<!-- <pict radius = "checkerradius" spriteName = "checker_relief" layer = "2.01" isRotatable = "false"/> -->
+				<!-- <pict size:x = "checkerradius*2" size:y = "checkerradius*2" spriteName = "blackblock" layer = "3"/>  -->
+				<pict radius = "checkerradius" spriteName = "valid_checker_sprite" layer = "3" spriteCollumnsNum = "3" spriteRowsNum = "2"
+				     isRotatable = "false" localTransparency = "0.5" isLocalVisible = "false">
+				    <context name = "currentSpriteNo" value = "validSprite"/>
+				    <context name = "isLocalVisible" value = "isClikable"/>
+				</pict>
+				<pict radius = "checkerradius" spriteName = "power" layer = "4" isRotatable = "false" isLocalRotatable = "true" localTransparency = "0" isLocalVisible = "true">
+				    <context name = "localPos" value = "directDraw"/>
+				    <context name = "localTransparency" value = "power"/>
+				    <context name = "isLocalVisible" value = "isSelected"/>
+				</pict>
+				<!-- <pict radius = "checkerradius/8" spriteName = "point" layer = "3" isRotatable = "false" localTransparency = "1" isLocalVisible = "true">
+				    <context name = "position" value = "pointPosition"/>
+				</pict> -->
+				<text text="black" fontSize="txtsz" color="white"/>
+				<animation currentValue = "0.0" startValue = "0.0" step = "1.0" interval = "0.2" finalValue = "5.0">
+				    <context name = "activation" value = "isClikable"/>
+					<context name = "currentValue" value = "validSprite"/>
+				</animation>
+				<animation currentValue = "1.0" startValue = "1.0" step = "0-0.2" interval = "0.1" finalValue = "0.0">
+    	    		<context name = "activation" value = "exist"/>
+    	    	</animation>
+    	    	
+				<d_touch isInScreenProportion = "true" proportion = "width/4" radius = "checkerradius" isClikable = "false">
+				    <context name = "lenght" value = "power"/>
+				</d_touch>
+				
+				<unit fieldName = "board"/>
+				<rec cameraman = "basecam"/>
+				<ownership ownerName = "p2"/>
+				<item name = "black_checker" gridName = "black_respawn"/>
+				<l_respawn respawnerName = "black_respawner"/>
+				<!-- <action type = "1" phase = "battle" changingProperty = "posy" newValue = "btmscrn - 1 * cllsz" /> -->
+				 
+			</prototype>
+												    	    
+	    </phase>
+		<phase name = "battle" repeat = "true" toStart = "true" 
+		    toOver = "$player.LogicalPlayer.gotControllingOwnership == 0 || $player2.LogicalPlayer.gotControllingOwnership == 0" 
+		    toRepeat = "3 &lt;= ($player.LogicalPlayer.wonNum + $player.LogicalPlayer.wonNum)">
+			
+	        <phase name = "turn" repeat = "true" toStart = "true" toOver = "true" 
+	            toRepeat = "$player.LogicalPlayer.gotControllingOwnership &lt; 1 &amp;&amp; $player2.LogicalPlayer.gotControllingOwnership == 1">
+
+	            <phase name = "freep1" repeat = "false" toStart = "$player.LogicalPlayer.access == 1" 
+			        toOver = "$player.LogicalPlayer.access == 0" 
+			        toRepeat = "false">
+			    </phase>
+			    <phase name = "freep2" repeat = "false" toStart = "$player2.LogicalPlayer.access == 1" 
+			        toOver = "$player2.LogicalPlayer.access > 0" 
+			        toRepeat = "false">
+			    </phase> 
+			    <phase name = "locked" repeat = "false" toStart = "true" 
+				    toOver = "$board.LogicalField.gotMovingUnits == 0" toRepeat = "false">
+				</phase>
+					
+   			</phase>	
+		</phase>	
+    </phase>
+    	
+</map>
