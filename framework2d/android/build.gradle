@@ -1,0 +1,96 @@
+apply plugin: 'com.android.application'
+
+// gdx-backend-android pulls a newer androidx.core than our pinned compileSdk 34 /
+// AGP 8.5.2 support; constrain it so the SDK-34 toolchain builds cleanly.
+configurations.all {
+    resolutionStrategy {
+        force 'androidx.core:core:1.13.1'
+        force 'androidx.core:core-ktx:1.13.1'
+        force 'androidx.lifecycle:lifecycle-runtime:2.6.2'
+    }
+}
+
+android {
+    namespace 'ru.fungames.checkers'
+    compileSdk 34
+    buildToolsVersion '34.0.0'
+
+    defaultConfig {
+        applicationId 'ru.fungames.checkers'
+        minSdk 21
+        targetSdk 34
+        versionCode 2
+        versionName '0.2'
+    }
+
+    buildTypes {
+        debug {
+            // keep debuggable default
+        }
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+            java.srcDirs = ['src/main/java']
+            res.srcDirs = ['res']
+            assets.srcDirs = ['../assets']
+            jniLibs.srcDirs = ['jniLibs']
+        }
+    }
+
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+}
+
+configurations {
+    natives
+}
+
+dependencies {
+    implementation(project(':core')) {
+        // Android ships org.xmlpull.v1 in the framework; keep the desktop-only parser out.
+        exclude group: 'xmlpull'
+        exclude group: 'xpp3'
+    }
+    implementation "com.badlogicgames.gdx:gdx-backend-android:$gdxVersion"
+
+    natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-armeabi-v7a"
+    natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-arm64-v8a"
+    natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86"
+    natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86_64"
+}
+
+// Unpack each libGDX native artifact (classifier 'natives-<abi>') into jniLibs/<abi>/.
+tasks.register('copyAndroidNatives') {
+    doLast {
+        configurations.natives.resolvedConfiguration.resolvedArtifacts.each { art ->
+            def cls = art.classifier
+            if (cls == null || !cls.startsWith('natives-')) {
+                return
+            }
+            def abi = cls.substring('natives-'.length())
+            def outDir = file("jniLibs/$abi")
+            outDir.mkdirs()
+            copy {
+                from zipTree(art.file)
+                into outDir
+                include '**/*.so'
+                eachFile { f -> f.path = f.name }
+            }
+        }
+    }
+}
+
+preBuild.dependsOn copyAndroidNatives

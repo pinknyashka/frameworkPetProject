@@ -1,0 +1,14 @@
+# Gradle / build outputs
+.gradle/
+build/
+
+# IDE and machine-specific
+local.properties
+.idea/
+*.iml
+
+# Generated Android natives (unpacked by :android:copyAndroidNatives)
+framework2d/android/jniLibs/
+
+# Working notes
+framework2d/plans/

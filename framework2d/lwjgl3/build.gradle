@@ -1,0 +1,20 @@
+apply plugin: 'java'
+apply plugin: 'application'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+dependencies {
+    implementation project(':core')
+    implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
+    implementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+}
+
+application {
+    mainClass = 'ru.fungames.checkers.desktop.DesktopLauncher'
+}
+
+// Shared assets live at the repo root and are reused by desktop and (later) android.
+run {
+    workingDir = "$rootDir/assets"
+}

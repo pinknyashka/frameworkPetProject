@@ -1,0 +1,27 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        google()
+        gradlePluginPortal()
+    }
+    dependencies {
+        // Android Gradle Plugin; only used once the :android module is enabled.
+        classpath 'com.android.tools.build:gradle:8.5.2'
+    }
+}
+
+allprojects {
+    version = '0.2'
+    ext {
+        appName = 'framework2d'
+        gdxVersion = '1.14.2'
+    }
+
+    repositories {
+        mavenCentral()
+        google()
+    }
+
+    // Legacy engine sources are windows-1251 (Russian comments); new sources are ASCII.
+    tasks.withType(JavaCompile).configureEach { options.encoding = 'windows-1251' }
+}

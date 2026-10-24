@@ -1,0 +1,4 @@
+rootProject.name = 'framework2d'
+include ':core'
+include ':lwjgl3'
+include ':android'
