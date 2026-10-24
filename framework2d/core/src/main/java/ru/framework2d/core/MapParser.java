@@ -268,7 +268,7 @@ public class MapParser {
 	    }
         Log.d(LOG_TAG, "Parsing is complete;");
         
-		/* вывод созданных контекстов данных в логи
+		/* РІС‹РІРѕРґ СЃРѕР·РґР°РЅРЅС‹С… РєРѕРЅС‚РµРєСЃС‚РѕРІ РґР°РЅРЅС‹С… РІ Р»РѕРіРё
          * output created data contexts in logs
          * */
 		/*for (DataContext dataContext : enginesManager.lstCommonContexts) {

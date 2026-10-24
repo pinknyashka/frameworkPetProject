@@ -21,7 +21,7 @@ The old Eclipse/ANT files are still present for historical reference, but the ac
 - Android compile SDK: `34`.
 - Android target SDK: `34`.
 - Android min SDK: `21`.
-- Java compile encoding: `windows-1251`, configured in the root `build.gradle`, because legacy engine comments are cp1251.
+- Java compile encoding: `UTF-8`, configured in the root `build.gradle`; all sources are UTF-8 without BOM.
 
 ## Requirements
 
@@ -159,7 +159,7 @@ The `core/src/main/java/ru/framework2d/sound/` package exists but is currently e
 
 ## Gotchas
 
-- **Legacy source encoding is Windows-1251, not UTF-8.** Several relocated engine files under `core/src/main/java/ru/framework2d` contain Russian comments in cp1251. The root Gradle build forces Java compilation encoding to `windows-1251`. New bridge/shim files are plain ASCII.
+- **All sources are UTF-8 (no BOM).** The relocated engine files under `core/src/main/java/ru/framework2d` with Russian comments were re-encoded from cp1251, and the root Gradle build compiles with `options.encoding = 'UTF-8'`. New bridge/shim files are plain ASCII.
 - `GameResources.getSprite` caches by sprite name only — two sprites sharing a bitmap but with different grid dimensions get the first definition.
 - Logging remains verbose. Useful tags include `"core"`, `"Parser"`, `"Physical"`, `"Logical"`, `"Output"`, `"Resources"`, and `"framework2d"`.
 - Typos in identifiers are load-bearing (`DEAFULT_MAP_DIRECTORY`, `spriteCollumnsNum`, `depht`) — do not rename without a repo-wide change.

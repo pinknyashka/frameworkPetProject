@@ -22,6 +22,6 @@ allprojects {
         google()
     }
 
-    // Legacy engine sources are windows-1251 (Russian comments); new sources are ASCII.
-    tasks.withType(JavaCompile).configureEach { options.encoding = 'windows-1251' }
+    // Every source file is UTF-8: the legacy windows-1251 Russian comments were re-encoded.
+    tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
 }

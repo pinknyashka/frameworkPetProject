@@ -50,7 +50,7 @@ public class Vector3 extends Vector2 {
 	}
 	
 	@Override
-	public double restore() {	//ñäåëàòü åäèíè÷íûì âåðíóâ ïðåæíþþ äëèíó to identity returns old length 
+	public double restore() {	//ÑÐ´ÐµÐ»Ð°Ñ‚ÑŒ ÐµÐ´Ð¸Ð½Ð¸Ñ‡Ð½Ñ‹Ð¼ Ð²ÐµÑ€Ð½ÑƒÐ² Ð¿Ñ€ÐµÐ¶Ð½ÑŽÑŽ Ð´Ð»Ð¸Ð½Ñƒ to identity returns old length 
 		double length = Math.sqrt(this.x.value * this.x.value + this.y.value * this.y.value + this.z.value * this.z.value);
 		if (length > 0) {
 			this.x.value /= length; this.y.value /= length; this.z.value /= length; 
@@ -60,59 +60,59 @@ public class Vector3 extends Vector2 {
 		
 	
 	
-	public Vector3 plus(Vector3 vector) {	//ñëîæèòü âåêòîðà âåðíóâ íîâûé 
+	public Vector3 plus(Vector3 vector) {	//ÑÐ»Ð¾Ð¶Ð¸Ñ‚ÑŒ Ð²ÐµÐºÑ‚Ð¾Ñ€Ð° Ð²ÐµÑ€Ð½ÑƒÐ² Ð½Ð¾Ð²Ñ‹Ð¹ 
 		return new Vector3(getX() + vector.getX(), getY() + vector.getY(), this.z.value + vector.getZ()); 
 	}
 	
-	public Vector3 minus(Vector3 vector) {	//ñëîæèòü âåêòîðà âåðíóâ íîâûé 
+	public Vector3 minus(Vector3 vector) {	//ÑÐ»Ð¾Ð¶Ð¸Ñ‚ÑŒ Ð²ÐµÐºÑ‚Ð¾Ñ€Ð° Ð²ÐµÑ€Ð½ÑƒÐ² Ð½Ð¾Ð²Ñ‹Ð¹ 
 		return new Vector3(getX() - vector.getX(), getY() - vector.getY(), this.z.value - vector.getZ()); 
 	}
 	
 	@Override
-	public Vector3 multi(double c) {	//óìíîæèòü âåêòîð íà ÷èñëî âåðíóâ íîâûé 
+	public Vector3 multi(double c) {	//ÑƒÐ¼Ð½Ð¾Ð¶Ð¸Ñ‚ÑŒ Ð²ÐµÐºÑ‚Ð¾Ñ€ Ð½Ð° Ñ‡Ð¸ÑÐ»Ð¾ Ð²ÐµÑ€Ð½ÑƒÐ² Ð½Ð¾Ð²Ñ‹Ð¹ 
 		return new Vector3(getX() * c, getY() * c, this.z.value * c); 
 	}
 	
 	
 	
-	public Vector3 selfMulti(double c) {	//óìíîæèòü ñåáÿ íà ÷èñëî
+	public Vector3 selfMulti(double c) {	//ÑƒÐ¼Ð½Ð¾Ð¶Ð¸Ñ‚ÑŒ ÑÐµÐ±Ñ Ð½Ð° Ñ‡Ð¸ÑÐ»Ð¾
 		this.x.value *= c; this.y.value *= c; this.z.value *= c;
 		return this; 
 	}
 	
 	
 	
-	public Vector3 addict(Vector3 vector) {	//ïðèðàñòèòü âåêòîð 
+	public Vector3 addict(Vector3 vector) {	//Ð¿Ñ€Ð¸Ñ€Ð°ÑÑ‚Ð¸Ñ‚ÑŒ Ð²ÐµÐºÑ‚Ð¾Ñ€ 
 		this.x.value += vector.x.value; this.y.value += vector.y.value; this.z.value += vector.z.value;
 		return this;
 	}
 	
 	
 	
-	public Vector3 decrease(Vector3 vector) {	//óìåíüøèòü âåêòîð 
+	public Vector3 decrease(Vector3 vector) {	//ÑƒÐ¼ÐµÐ½ÑŒÑˆÐ¸Ñ‚ÑŒ Ð²ÐµÐºÑ‚Ð¾Ñ€ 
 		this.x.value -= vector.x.value; this.y.value -= vector.y.value; this.z.value -= vector.z.value;
 		return this;
 	}
 	
 	
 	
-	public double myProectionOnVector(double x, double y, double z) {	//ïðîåêöèÿ ìåíÿ íà âåêòîð êîòîðûé ïåðåäàåòñÿ ïàðàìåòðîì
+	public double myProectionOnVector(double x, double y, double z) {	//Ð¿Ñ€Ð¾ÐµÐºÑ†Ð¸Ñ Ð¼ÐµÐ½Ñ Ð½Ð° Ð²ÐµÐºÑ‚Ð¾Ñ€ ÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ð¹ Ð¿ÐµÑ€ÐµÐ´Ð°ÐµÑ‚ÑÑ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð¼
 		double length = length3();
 		if (length > 0) return (getX() * x + getY() * y + this.z.value * z) / length;
 		else return 0; 
 	}
 	
-	public double myProectionOnVector(Vector3 vector) {	//ïðîåêöèÿ ìåíÿ íà âåêòîð êîòîðûé ïåðåäàåòñÿ ïàðàìåòðîì
+	public double myProectionOnVector(Vector3 vector) {	//Ð¿Ñ€Ð¾ÐµÐºÑ†Ð¸Ñ Ð¼ÐµÐ½Ñ Ð½Ð° Ð²ÐµÐºÑ‚Ð¾Ñ€ ÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ð¹ Ð¿ÐµÑ€ÐµÐ´Ð°ÐµÑ‚ÑÑ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð¼
 		return myProectionOnVector(vector.getX(), vector.getY(), vector.getZ()); 
 	}
 	
-	public double myAbsProectionOnVector(Vector3 vector) {	//ïðîåêöèÿ ìåíÿ íà âåêòîð êîòîðûé ïåðåäàåòñÿ ïàðàìåòðîì
+	public double myAbsProectionOnVector(Vector3 vector) {	//Ð¿Ñ€Ð¾ÐµÐºÑ†Ð¸Ñ Ð¼ÐµÐ½Ñ Ð½Ð° Ð²ÐµÐºÑ‚Ð¾Ñ€ ÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ð¹ Ð¿ÐµÑ€ÐµÐ´Ð°ÐµÑ‚ÑÑ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð¼
 		double k = myProectionOnVector(vector.getX(), vector.getY(), vector.getZ());
 		if (k > 0) return k;
 		else return -k;
 	}
 	
-	public Vector3 myVectorProectionOnVector(Vector3 vector) {	//ïðîåêöèÿ ìåíÿ íà âåêòîð êîòîðûé ïåðåäàåòñÿ ïàðàìåòðîì
+	public Vector3 myVectorProectionOnVector(Vector3 vector) {	//Ð¿Ñ€Ð¾ÐµÐºÑ†Ð¸Ñ Ð¼ÐµÐ½Ñ Ð½Ð° Ð²ÐµÐºÑ‚Ð¾Ñ€ ÐºÐ¾Ñ‚Ð¾Ñ€Ñ‹Ð¹ Ð¿ÐµÑ€ÐµÐ´Ð°ÐµÑ‚ÑÑ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ð¾Ð¼
 		double length = length3();
 		if (length > 0) return vector.multi((getX() * vector.getX() 
 											+ getY() * vector.getY() 

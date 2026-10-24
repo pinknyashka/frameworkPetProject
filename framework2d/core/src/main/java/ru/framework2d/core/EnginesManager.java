@@ -123,29 +123,29 @@ public class EnginesManager {
 			
 			ArrayList <DataCommunicationContext> lstNewHandlerContexts = handler.getContexts();
 			
-			//по всем связям дата-контекст нового движка
+			//РїРѕ РІСЃРµРј СЃРІСЏР·СЏРј РґР°С‚Р°-РєРѕРЅС‚РµРєСЃС‚ РЅРѕРІРѕРіРѕ РґРІРёР¶РєР°
 			for (DataCommunicationContext newHandlerContext : lstNewHandlerContexts) {
 				boolean gotCreatedContext = false;
-				//по всем общим контекстам 
+				//РїРѕ РІСЃРµРј РѕР±С‰РёРј РєРѕРЅС‚РµРєСЃС‚Р°Рј 
 				for (DataContext commonContext : lstCommonContexts) {
-					//если контексты совпадают по имени
+					//РµСЃР»Рё РєРѕРЅС‚РµРєСЃС‚С‹ СЃРѕРІРїР°РґР°СЋС‚ РїРѕ РёРјРµРЅРё
 					if (newHandlerContext.context.name.contentEquals(commonContext.name)) {
-						//синхронизация отражений хранящихся в контексте
+						//СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёСЏ РѕС‚СЂР°Р¶РµРЅРёР№ С…СЂР°РЅСЏС‰РёС…СЃСЏ РІ РєРѕРЅС‚РµРєСЃС‚Рµ
 						
-						//по всем отражениям свзяанным с контекстом обрабатываемым новым движком 
+						//РїРѕ РІСЃРµРј РѕС‚СЂР°Р¶РµРЅРёСЏРј СЃРІР·СЏР°РЅРЅС‹Рј СЃ РєРѕРЅС‚РµРєСЃС‚РѕРј РѕР±СЂР°Р±Р°С‚С‹РІР°РµРјС‹Рј РЅРѕРІС‹Рј РґРІРёР¶РєРѕРј 
 						for (Class <Component> newHandlerLinkedReflection : newHandlerContext.context.lstLinkedComponents) {
 							boolean gotSameReflection = false;
-							//по всем отражениям встречающимся в общем контексте 
+							//РїРѕ РІСЃРµРј РѕС‚СЂР°Р¶РµРЅРёСЏРј РІСЃС‚СЂРµС‡Р°СЋС‰РёРјСЃСЏ РІ РѕР±С‰РµРј РєРѕРЅС‚РµРєСЃС‚Рµ 
 							for (Class <Component> commonLinkedReflection : commonContext.lstLinkedComponents) {
 								if (newHandlerLinkedReflection.equals(commonLinkedReflection)) {
-									//отражение в контексте нового движка совпало с отражением из общего контеста 
+									//РѕС‚СЂР°Р¶РµРЅРёРµ РІ РєРѕРЅС‚РµРєСЃС‚Рµ РЅРѕРІРѕРіРѕ РґРІРёР¶РєР° СЃРѕРІРїР°Р»Рѕ СЃ РѕС‚СЂР°Р¶РµРЅРёРµРј РёР· РѕР±С‰РµРіРѕ РєРѕРЅС‚РµСЃС‚Р° 
 									gotSameReflection = true;
-									//убедиться есть ли у отражения обработчик
+									//СѓР±РµРґРёС‚СЊСЃСЏ РµСЃС‚СЊ Р»Рё Сѓ РѕС‚СЂР°Р¶РµРЅРёСЏ РѕР±СЂР°Р±РѕС‚С‡РёРє
 									boolean gotBasicHandler = false;
 									if (commonContext.lstBasicLinkedHandlers.isEmpty()) {
-										gotBasicHandler = true; //обработчик отражения был, делать нечего
+										gotBasicHandler = true; //РѕР±СЂР°Р±РѕС‚С‡РёРє РѕС‚СЂР°Р¶РµРЅРёСЏ Р±С‹Р», РґРµР»Р°С‚СЊ РЅРµС‡РµРіРѕ
 									}
-									if (!gotBasicHandler) {//обработчика небыло, добавляем себя в качестве базового обработчика
+									if (!gotBasicHandler) {//РѕР±СЂР°Р±РѕС‚С‡РёРєР° РЅРµР±С‹Р»Рѕ, РґРѕР±Р°РІР»СЏРµРј СЃРµР±СЏ РІ РєР°С‡РµСЃС‚РІРµ Р±Р°Р·РѕРІРѕРіРѕ РѕР±СЂР°Р±РѕС‚С‡РёРєР°
 										for (Class <Component> basicProcessingReflection : handler.lstBasicProcessingComponents) {												
 											if (basicProcessingReflection.equals(commonLinkedReflection)){
 												commonContext.lstBasicLinkedHandlers.add(handler);
@@ -156,17 +156,17 @@ public class EnginesManager {
 							}
 							if (!gotSameReflection) {
 								commonContext.lstLinkedComponents.add(newHandlerLinkedReflection);
-								//убедиться есть ли у отражения обработчик
+								//СѓР±РµРґРёС‚СЊСЃСЏ РµСЃС‚СЊ Р»Рё Сѓ РѕС‚СЂР°Р¶РµРЅРёСЏ РѕР±СЂР°Р±РѕС‚С‡РёРє
 								boolean gotBasicHandler = false;
 								for (ComponentsHandler reflectionsHandler : commonContext.lstBasicLinkedHandlers) {
 									for (Class <Component> basicProcessingReflection : reflectionsHandler.lstBasicProcessingComponents) {
 										//if (basicProcessingReflection.equals(newHandlerLinkedReflection)) {
 										if (newHandlerLinkedReflection.isAssignableFrom(basicProcessingReflection)) {
-											gotBasicHandler = true; //обработчик отражения был, делать нечего
+											gotBasicHandler = true; //РѕР±СЂР°Р±РѕС‚С‡РёРє РѕС‚СЂР°Р¶РµРЅРёСЏ Р±С‹Р», РґРµР»Р°С‚СЊ РЅРµС‡РµРіРѕ
 										}
 									}
 								}
-								if (!gotBasicHandler) { //обработчика небыло, добавляем себя в качестве базового обработчика
+								if (!gotBasicHandler) { //РѕР±СЂР°Р±РѕС‚С‡РёРєР° РЅРµР±С‹Р»Рѕ, РґРѕР±Р°РІР»СЏРµРј СЃРµР±СЏ РІ РєР°С‡РµСЃС‚РІРµ Р±Р°Р·РѕРІРѕРіРѕ РѕР±СЂР°Р±РѕС‚С‡РёРєР°
 									for (Class <Component> basicProcessingReflection : handler.lstBasicProcessingComponents) {												
 										if (basicProcessingReflection.equals(newHandlerLinkedReflection)) {
 											commonContext.lstBasicLinkedHandlers.add(handler);
@@ -182,7 +182,7 @@ public class EnginesManager {
 				}
 				if (!gotCreatedContext) lstCommonContexts.add(newHandlerContext.context);
 			}
-			//если обрабатываемое новым движком отражение имеет представления более высокого уровня то запомнить все связанные с ними обработчики   
+			//РµСЃР»Рё РѕР±СЂР°Р±Р°С‚С‹РІР°РµРјРѕРµ РЅРѕРІС‹Рј РґРІРёР¶РєРѕРј РѕС‚СЂР°Р¶РµРЅРёРµ РёРјРµРµС‚ РїСЂРµРґСЃС‚Р°РІР»РµРЅРёСЏ Р±РѕР»РµРµ РІС‹СЃРѕРєРѕРіРѕ СѓСЂРѕРІРЅСЏ С‚Рѕ Р·Р°РїРѕРјРЅРёС‚СЊ РІСЃРµ СЃРІСЏР·Р°РЅРЅС‹Рµ СЃ РЅРёРјРё РѕР±СЂР°Р±РѕС‚С‡РёРєРё   
 			for (Class <Component> newHandlerComponent : handler.lstProcessingComponents) {
 				
 				for (ComponentsHandler processingHandler : lstHandlers) {
@@ -310,9 +310,9 @@ public class EnginesManager {
 		if (currentCreatedHandler != null) {
 			
 			ArrayList <DataCommunicationContext> lstNewHandlerContexts = currentCreatedHandler.getContexts();
-			//если среди опций есть имя существующего контекста 
-			//то создать новый контекст (или позаимствовать существующий) 
-			//с именем указаным в параметре и заменить
+			//РµСЃР»Рё СЃСЂРµРґРё РѕРїС†РёР№ РµСЃС‚СЊ РёРјСЏ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РµРіРѕ РєРѕРЅС‚РµРєСЃС‚Р° 
+			//С‚Рѕ СЃРѕР·РґР°С‚СЊ РЅРѕРІС‹Р№ РєРѕРЅС‚РµРєСЃС‚ (РёР»Рё РїРѕР·Р°РёРјСЃС‚РІРѕРІР°С‚СЊ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№) 
+			//СЃ РёРјРµРЅРµРј СѓРєР°Р·Р°РЅС‹Рј РІ РїР°СЂР°РјРµС‚СЂРµ Рё Р·Р°РјРµРЅРёС‚СЊ
 			
 			Property contextName = options.findPropertyByName("name");
 			Property contextValue = options.findPropertyByName("value");
@@ -322,9 +322,9 @@ public class EnginesManager {
 			if (contextName != null && contextValue != null && 
 					!contextName.name.contentEquals("") && !contextName.data.toString().contentEquals("") && 
 					!contextValue.name.contentEquals("") && !contextValue.data.toString().contentEquals("")) {
-				//по всем опциям созданного движка
+				//РїРѕ РІСЃРµРј РѕРїС†РёСЏРј СЃРѕР·РґР°РЅРЅРѕРіРѕ РґРІРёР¶РєР°
 				for (DataCommunicationContext newHandlerContext : lstNewHandlerContexts) {
-					//если среди имен переменных найдено соответствие с опцией
+					//РµСЃР»Рё СЃСЂРµРґРё РёРјРµРЅ РїРµСЂРµРјРµРЅРЅС‹С… РЅР°Р№РґРµРЅРѕ СЃРѕРѕС‚РІРµС‚СЃС‚РІРёРµ СЃ РѕРїС†РёРµР№
 					if (contextName.data.toString().contentEquals(newHandlerContext.dataNameInComponent)) {
 						newHandlerContext.context.name = contextValue.data.toString();
 						if (transferValue != null) newHandlerContext.transferValue = transferValue.data.toString();
@@ -348,7 +348,7 @@ public class EnginesManager {
 									(ComponentsHandler) currentCreatedComponent.getFactory();
 							
 							for (DataContext commonContext : lstCommonContexts) {
-								//если контексты совпадают по имени
+								//РµСЃР»Рё РєРѕРЅС‚РµРєСЃС‚С‹ СЃРѕРІРїР°РґР°СЋС‚ РїРѕ РёРјРµРЅРё
 								if (contextValues.contentEquals(commonContext.name)) {
 									Log.d(LOG_TAG, "using common context " + commonContext.name + 
 												" in data " + data.getName() +

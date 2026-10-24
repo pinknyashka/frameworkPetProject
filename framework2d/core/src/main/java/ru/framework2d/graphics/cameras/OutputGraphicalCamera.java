@@ -46,8 +46,8 @@ public class OutputGraphicalCamera extends OutputGraphicalInterface {
 	private Position2 localPosition = new Position2();
 	
 	public Position2 getLocaleCoordinate(Position2 pos) {
-		vToPoint.set(pos, position); //взял в координатах экрана
-		vToPoint.rotate(-position.getAlpha());//повернул на угол камеры
+		vToPoint.set(pos, position); //РІР·СЏР» РІ РєРѕРѕСЂРґРёРЅР°С‚Р°С… СЌРєСЂР°РЅР°
+		vToPoint.rotate(-position.getAlpha());//РїРѕРІРµСЂРЅСѓР» РЅР° СѓРіРѕР» РєР°РјРµСЂС‹
 		localPosition.set(	eyePos.getX() + (float) vToPoint.getX() / zoom.value, 
 							eyePos.getY() + (float) vToPoint.getY() / zoom.value,
 							pos.getAlpha() - (float) position.getAlpha());
@@ -55,8 +55,8 @@ public class OutputGraphicalCamera extends OutputGraphicalInterface {
 	}
 	
 	public Position2 getLocaleCoordinate(Position3 pos) {
-		vToPoint.set(pos, position); //взял в координатах экрана
-		vToPoint.rotate(-position.getAlpha());//повернул на угол камеры
+		vToPoint.set(pos, position); //РІР·СЏР» РІ РєРѕРѕСЂРґРёРЅР°С‚Р°С… СЌРєСЂР°РЅР°
+		vToPoint.rotate(-position.getAlpha());//РїРѕРІРµСЂРЅСѓР» РЅР° СѓРіРѕР» РєР°РјРµСЂС‹
 		localPosition.set(	eyePos.getX() + (float) vToPoint.getX() / zoom.value, 
 							eyePos.getY() + (float) vToPoint.getY() / zoom.value,
 							pos.getAlpha() - (float) position.getAlpha());
@@ -67,7 +67,7 @@ public class OutputGraphicalCamera extends OutputGraphicalInterface {
 	
 	public Point2 getLocaleCoordinate(Point2 point) {
 		vToPoint.set(point, position); 
-		vToPoint.rotate(-position.getAlpha()); //повернул на угол камеры rotate to camera angle
+		vToPoint.rotate(-position.getAlpha()); //РїРѕРІРµСЂРЅСѓР» РЅР° СѓРіРѕР» РєР°РјРµСЂС‹ rotate to camera angle
 		localPoint.set(	eyePos.getX() + (float) vToPoint.getX() / zoom.value, 
 						eyePos.getY() + (float) vToPoint.getY() / zoom.value);
 		return localPoint;

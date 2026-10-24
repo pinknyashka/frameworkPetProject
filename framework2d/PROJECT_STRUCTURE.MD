@@ -9,7 +9,7 @@ The active stack is:
 - Java source/target `1.8`, built with JDK 17.
 - Android Gradle Plugin `8.5.2`.
 - Android compile SDK `34`, target SDK `34`, min SDK `21`.
-- Root Gradle Java compile encoding: `windows-1251` for legacy cp1251 comments.
+- Root Gradle Java compile encoding: `UTF-8` (all sources re-encoded from the legacy cp1251).
 
 The old Eclipse/ANT files are still present, but they are no longer the active build path.
 
@@ -41,17 +41,17 @@ The desktop smoke run currently uses `checkers_tree` as the default map and exit
 
 | File | Description |
 |---|---|
-| `AGENTS.md` | Older agent instructions from the Eclipse/ANT era. Useful for historical gotchas, especially cp1251 files and XML architecture, but its stack/build sections are superseded by `README.MD` and this file. |
+| `AGENTS.md` | Older agent instructions from the Eclipse/ANT era. Useful for historical gotchas, especially the XML architecture, but its stack/build sections are superseded by `README.MD` and this file. |
 | `README.MD` | Human-facing overview of the migrated stack, modules, build/run commands, resources, map format, gotchas. |
 | `PROJECT_STRUCTURE.MD` | Current file/directory map. |
-| `build.gradle` | Root Gradle build. Adds AGP classpath, common repos, project version `0.2`, `appName`, `gdxVersion = '1.14.2'`, and forces Java compile encoding to `windows-1251`. |
+| `build.gradle` | Root Gradle build. Adds AGP classpath, common repos, project version `0.2`, `appName`, `gdxVersion = '1.14.2'`, and sets Java compile encoding to `UTF-8`. |
 | `settings.gradle` | Includes modules `:core`, `:lwjgl3`, and `:android`. |
 | `gradle.properties` | Gradle daemon/JVM settings and AndroidX enablement: `android.useAndroidX=true`. |
 | `gradlew`, `gradlew.bat` | Gradle wrapper scripts. |
 | `gradle/wrapper/gradle-wrapper.properties` | Wrapper configuration, Gradle `8.7`. |
 | `local.properties` | Machine-local Android SDK pointer. Must point `sdk.dir` to a valid Android SDK on the current machine. |
 | `plans/binding-plan.md` | Working plan for a future/pending data-binding feature. Not part of the stack migration itself. |
-| `changelog.txt` | Legacy dated changelog. Russian, cp1251. |
+| `changelog.txt` | Legacy dated changelog. Russian, UTF-8. |
 | `AndroidManifest.xml` | Legacy Eclipse-era Android manifest. Not used by the active Android module. |
 | `build.xml` | Legacy ANT build file. Not used by Gradle. |
 | `project.properties` | Legacy ADT/Android target file. Not used by Gradle. |
@@ -109,19 +109,19 @@ Compatibility package replacing Android API classes used by the original engine.
 
 | File | Description |
 |---|---|
-| `Engine.java` | Abstract engine-tree node; holds static singletons (`resources`, `entityStorage`, `enginesManager`, `enginesScheduler`); propagates work state; serial/parallel iteration. **cp1251 comments.** |
-| `EnginesManager.java` | Central registry: reflectively instantiates engines from tags, dispatches component creation to handlers, merges named `DataContext`s, holds `PARALLEL_WORK`. **cp1251 comments.** |
+| `Engine.java` | Abstract engine-tree node; holds static singletons (`resources`, `entityStorage`, `enginesManager`, `enginesScheduler`); propagates work state; serial/parallel iteration. **Russian comments (UTF-8).** |
+| `EnginesManager.java` | Central registry: reflectively instantiates engines from tags, dispatches component creation to handlers, merges named `DataContext`s, holds `PARALLEL_WORK`. **Russian comments (UTF-8).** |
 | `EnginesScheduler.java` | Root engine ticking the engine tree and finishing draw passes through `overDraw()`. |
 | `ComponentsHandler.java` | Abstract `Engine` + `Factory` that owns component classes; creates components by tag name, wires contexts, connects entity components to handlers. |
 | `GameCore.java` | Top-level migrated facade. Constructs `GameResources`, `EntityStorage`, `EnginesManager`, and `MapParser`; parses a chosen map through `createObjectsModel(String mapName)`. No Android `SurfaceView` dependency. |
-| `MapParser.java` | XML map parser and tag dispatcher. Reads entity/prototype tags, `<replace>`, `<context>`, engine tags, and component tags. Uses `com.badlogic.gdx.Gdx.graphics.getWidth()`/`getHeight()` for `DisplayWidth`/`DisplayHeight`. **cp1251 comments.** |
+| `MapParser.java` | XML map parser and tag dispatcher. Reads entity/prototype tags, `<replace>`, `<context>`, engine tags, and component tags. Uses `com.badlogic.gdx.Gdx.graphics.getWidth()`/`getHeight()` for `DisplayWidth`/`DisplayHeight`. **Russian comments (UTF-8).** |
 | `Entity.java` | Game object grouping components; sorts graphical/touch/physical/logical components; reads `name`/`single`; clones prototypes. |
 | `EntityStorage.java` | Holds parsed entities and prototypes; tracks current entity nesting; spawns instances from prototypes. |
 | `Component.java` | Abstract component base; holds position, entity link, data fields, handlers; applies XML attributes through `setPropertyData`; supports reflective prototype cloning. |
 | `Property.java` | Pairs an XML attribute name with a typed `DataInterface` value; case-insensitive `isNamed`. |
 | `TagOptions.java` | Per-tag options bag: tag name, depth, properties; case-insensitive `findPropertyByName`. |
 | `DataContext.java` | Named pub/sub hub recording linked component classes and handlers. |
-| `DataCommunicationContext.java` | Pairs one component data-field name with a shared `DataContext` and optional `transferValue`. **cp1251 comments.** |
+| `DataCommunicationContext.java` | Pairs one component data-field name with a shared `DataContext` and optional `transferValue`. **Russian comments (UTF-8).** |
 | `Factory.java` | Component creator interface: `canCreateThisComponent`, `createComponent`, `connectComponent`, `setContextToComponent`, `getContexts`. |
 | `InteractionHandler.java` | Collision interaction interface: `isInteractionPossible`, `isInteractionHappened`, `toHandleInteraction`. |
 | `Sprite.java` | Sprite/grid wrapper: bitmap plus columns/rows grid for frame lookup. |
@@ -151,8 +151,8 @@ All implement or extend `DataInterface`; `commit()` dispatches pub/sub to linked
 | `Point3.java` | 3D point with per-axis property parsing. |
 | `Position2.java` | 2D position plus rotation. |
 | `Position3.java` | 3D position plus Euler angles. |
-| `Vector2.java` | 2D vector math. **cp1251 comments.** |
-| `Vector3.java` | 3D vector math. **cp1251 comments.** |
+| `Vector2.java` | 2D vector math. **Russian comments (UTF-8).** |
+| `Vector3.java` | 3D vector math. **Russian comments (UTF-8).** |
 | `Movement2.java` | 2D movement vector plus speed/rotation. |
 | `Movement3.java` | 3D movement vector plus speed/rotations. |
 | `Geometry.java` | Abstract geometry base. |
@@ -172,7 +172,7 @@ All implement or extend `DataInterface`; `commit()` dispatches pub/sub to linked
 
 | File | Description |
 |---|---|
-| `HandlerAnimation.java` | Animation handler; starts/stops animations through triggers and steps values. **cp1251 comments.** |
+| `HandlerAnimation.java` | Animation handler; starts/stops animations through triggers and steps values. **Russian comments (UTF-8).** |
 | `OutputGraphicalAnimation.java` | Animated scalar component (`animation`). |
 
 #### `graphics/cameras/`
@@ -180,7 +180,7 @@ All implement or extend `DataInterface`; `commit()` dispatches pub/sub to linked
 | File | Description |
 |---|---|
 | `HandlerCameras.java` | Camera handler; creates pointer cameras, applies camera transform to canvas, converts touches to camera-local coordinates. |
-| `OutputGraphicalCamera.java` | Camera component (`camera`); zoom, eye position, touchability, coordinate conversion. **cp1251 comments.** |
+| `OutputGraphicalCamera.java` | Camera component (`camera`); zoom, eye position, touchability, coordinate conversion. **Russian comments (UTF-8).** |
 | `WorldPointerCamera.java` | Camera-bound pointer (`cam_pointer`). |
 
 #### `graphics/draw/`
@@ -231,7 +231,7 @@ These advanced drawing features currently rely on libGDX-backed approximations a
 | File | Description |
 |---|---|
 | `HandlerShapesCollisions.java` | Shape collision handler; pairwise collision resolution and impulses. |
-| `InteractionShapes.java` | Base shape-pair collision response. **cp1251 comments.** |
+| `InteractionShapes.java` | Base shape-pair collision response. **Russian comments (UTF-8).** |
 | `PhysicalShape.java` | Abstract collision shape; AABB, static flag, contact points, impulse. |
 
 #### `physics/collisions/circles/`
@@ -239,7 +239,7 @@ These advanced drawing features currently rely on libGDX-backed approximations a
 | File | Description |
 |---|---|
 | `PhysicalCircle.java` | Circle shape (`circle`). |
-| `InteractionCircles.java` | Circle-circle collision handler. **cp1251 comments.** |
+| `InteractionCircles.java` | Circle-circle collision handler. **Russian comments (UTF-8).** |
 
 #### `physics/collisions/blocks/`
 
@@ -252,7 +252,7 @@ These advanced drawing features currently rely on libGDX-backed approximations a
 
 | File | Description |
 |---|---|
-| `InteractionCirclesBlocks.java` | Circle-block collision handler. **cp1251 comments.** |
+| `InteractionCirclesBlocks.java` | Circle-block collision handler. **Russian comments (UTF-8).** |
 
 #### `physics/collisions/particular/` and `particularblock/`
 
@@ -301,7 +301,7 @@ These advanced drawing features currently rely on libGDX-backed approximations a
 |---|---|
 | `LogicalPlayer.java` | Player component (`player`). |
 | `LogicalOwnership.java` | Ownership component (`ownership`). |
-| `HandlerPlayers.java` | Player/ownership/turn/win logic handler. **cp1251 comments.** |
+| `HandlerPlayers.java` | Player/ownership/turn/win logic handler. **Russian comments (UTF-8).** |
 
 #### `logic/respawns/`
 
@@ -488,5 +488,5 @@ These files are retained during migration but are not used by the Gradle modules
 - **The active runtime map is `checkers_tree`.** The current bridge does not yet reproduce the old `MainActivity` map picker.
 - **Other maps remain present as legacy data.** They may require map-schema updates before they can be loaded by the current engine reflection path.
 - **Sound is intentionally not added yet.** The `sound` package is empty; sound-effect work is a later change after migration.
-- **Encoding still matters.** The root Gradle build sets Java compile encoding to `windows-1251` because legacy engine comments are cp1251.
+- **Keep files UTF-8 (no BOM).** The root Gradle build compiles with `UTF-8`; the legacy cp1251 engine comments and `changelog.txt` have been re-encoded.
 - **No tests/lint/CI.** Verification is compile + desktop smoke + APK assembly + on-device run.

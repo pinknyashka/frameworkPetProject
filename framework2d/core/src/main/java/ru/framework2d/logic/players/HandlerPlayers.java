@@ -264,7 +264,7 @@ public class HandlerPlayers extends ComponentsHandler {
 							
 							/*next player turn*/
 							if (player.isInProgress.value && !controlPassed) {
-								//правило передачи хода поместить в подобработчик 
+								//РїСЂР°РІРёР»Рѕ РїРµСЂРµРґР°С‡Рё С…РѕРґР° РїРѕРјРµСЃС‚РёС‚СЊ РІ РїРѕРґРѕР±СЂР°Р±РѕС‚С‡РёРє 
 								
 								controlPassed = true;
 								if (!respawning) {

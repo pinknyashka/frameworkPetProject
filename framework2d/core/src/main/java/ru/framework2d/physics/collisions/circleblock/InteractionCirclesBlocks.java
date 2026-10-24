@@ -372,10 +372,10 @@ public class InteractionCirclesBlocks extends InteractionShapes {
 		choiseLongestSide = fromNearestToSecondVertex.length2() > fromNearestToThirdVertex.length2();
 		
 		if (fromNearestToSecondVertex.myProectionOnVector(fromNearestVertexToCircle) < 0) {
-			//окружность не лежит напротив того ребра которое мы приняли за ближайшее
+			//РѕРєСЂСѓР¶РЅРѕСЃС‚СЊ РЅРµ Р»РµР¶РёС‚ РЅР°РїСЂРѕС‚РёРІ С‚РѕРіРѕ СЂРµР±СЂР° РєРѕС‚РѕСЂРѕРµ РјС‹ РїСЂРёРЅСЏР»Рё Р·Р° Р±Р»РёР¶Р°Р№С€РµРµ
 			
 			if (fromNearestToThirdVertex.myProectionOnVector(fromNearestVertexToCircle) < 0) {
-				//а так же не лежит напротив второго ребра
+				//Р° С‚Р°Рє Р¶Рµ РЅРµ Р»РµР¶РёС‚ РЅР°РїСЂРѕС‚РёРІ РІС‚РѕСЂРѕРіРѕ СЂРµР±СЂР°
 				
 				fromCircleToNearestVertexNormal.set(-fromNearestVertexToCircle.y.value, fromNearestVertexToCircle.x.value);
 				fromCircleToNearestVertexNormal.restore();

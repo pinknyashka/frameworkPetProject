@@ -11,7 +11,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import ru.framework2d.compat.Log;
 
 // interface which controls the engines manager
-public abstract class Engine {	// интерфейс с которым работает планировщик
+public abstract class Engine {	// РёРЅС‚РµСЂС„РµР№СЃ СЃ РєРѕС‚РѕСЂС‹Рј СЂР°Р±РѕС‚Р°РµС‚ РїР»Р°РЅРёСЂРѕРІС‰РёРє
 	
 	public String name = "";
 

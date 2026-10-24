@@ -119,13 +119,13 @@ public class Vector2 extends DataInterface {
 		return this;
 	}
 	//returns new vector (bad)
-	public Vector2 plus(Vector2 vector) {	//ñëîæèòü âåêòîğà âåğíóâ íîâûé 
+	public Vector2 plus(Vector2 vector) {	//ÑĞ»Ğ¾Ğ¶Ğ¸Ñ‚ÑŒ Ğ²ĞµĞºÑ‚Ğ¾Ñ€Ğ° Ğ²ĞµÑ€Ğ½ÑƒĞ² Ğ½Ğ¾Ğ²Ñ‹Ğ¹ 
 		return new Vector2(getX() + vector.getX(), getY() + vector.getY()); 
 	}
-	public Vector2 minus(Vector2 vector) {	//âû÷åñòü âåêòîğà âåğíóâ íîâûé 
+	public Vector2 minus(Vector2 vector) {	//Ğ²Ñ‹Ñ‡ĞµÑÑ‚ÑŒ Ğ²ĞµĞºÑ‚Ğ¾Ñ€Ğ° Ğ²ĞµÑ€Ğ½ÑƒĞ² Ğ½Ğ¾Ğ²Ñ‹Ğ¹ 
 		return new Vector2(getX() - vector.getX(), getY() - vector.getY()); 
 	}
-	public Vector2 multi(double c) {	//óìíîæèòü âåêòîğ íà ÷èñëî âåğíóâ íîâûé 
+	public Vector2 multi(double c) {	//ÑƒĞ¼Ğ½Ğ¾Ğ¶Ğ¸Ñ‚ÑŒ Ğ²ĞµĞºÑ‚Ğ¾Ñ€ Ğ½Ğ° Ñ‡Ğ¸ÑĞ»Ğ¾ Ğ²ĞµÑ€Ğ½ÑƒĞ² Ğ½Ğ¾Ğ²Ñ‹Ğ¹ 
 		return new Vector2(getX() * c, getY() * c); 
 	}
 	
@@ -199,7 +199,7 @@ public class Vector2 extends DataInterface {
 	 * @param vector - axis vector  
 	 * @return unsigned length of projection of this vector on vector v
 	 */
-	public double myAbsProectionOnVector(Vector2 vector) {	//ïğîåêöèÿ ìåíÿ íà âåêòîğ êîòîğûé ïåğåäàåòñÿ ïàğàìåòğîì
+	public double myAbsProectionOnVector(Vector2 vector) {	//Ğ¿Ñ€Ğ¾ĞµĞºÑ†Ğ¸Ñ Ğ¼ĞµĞ½Ñ Ğ½Ğ° Ğ²ĞµĞºÑ‚Ğ¾Ñ€ ĞºĞ¾Ñ‚Ğ¾Ñ€Ñ‹Ğ¹ Ğ¿ĞµÑ€ĞµĞ´Ğ°ĞµÑ‚ÑÑ Ğ¿Ğ°Ñ€Ğ°Ğ¼ĞµÑ‚Ñ€Ğ¾Ğ¼
 		double k = myProectionOnVector(vector);
 		if (k > 0) return k;
 		else return -k;

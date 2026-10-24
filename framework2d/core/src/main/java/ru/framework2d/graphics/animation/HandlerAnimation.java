@@ -122,7 +122,7 @@ public class HandlerAnimation extends ComponentsHandler {
 	}
 	 
 	class AnimationTask extends TimerTask {
-	    public void run() { //что делаем по таймеру 
+	    public void run() { //С‡С‚Рѕ РґРµР»Р°РµРј РїРѕ С‚Р°Р№РјРµСЂСѓ 
 	    	iterate();
     	}
     }

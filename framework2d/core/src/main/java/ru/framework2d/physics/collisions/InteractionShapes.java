@@ -53,13 +53,13 @@ public class InteractionShapes extends ComponentsHandler implements InteractionH
 	private Vector2 toFirstShapeContactPoint = new Vector2();
 	private Vector2 toSecondShapeContactPoint = new Vector2();
 	
-	private Vector2 angularFirstShapeContactPointBase = new Vector2();//вектор базы скорости вращения по часовой 
+	private Vector2 angularFirstShapeContactPointBase = new Vector2();//РІРµРєС‚РѕСЂ Р±Р°Р·С‹ СЃРєРѕСЂРѕСЃС‚Рё РІСЂР°С‰РµРЅРёСЏ РїРѕ С‡Р°СЃРѕРІРѕР№ 
 	private Vector2 angularSecondShapeContactPointBase = new Vector2();
 	
-	private Vector2 angularFirstShapeContactPointMove = new Vector2();		//мгновенное поступательное движение вращающейся точки
+	private Vector2 angularFirstShapeContactPointMove = new Vector2();		//РјРіРЅРѕРІРµРЅРЅРѕРµ РїРѕСЃС‚СѓРїР°С‚РµР»СЊРЅРѕРµ РґРІРёР¶РµРЅРёРµ РІСЂР°С‰Р°СЋС‰РµР№СЃСЏ С‚РѕС‡РєРё
 	private Vector2 angularSecondShapeContactPointMove = new Vector2(); //v=w*r
 	
-	private Vector2 oldFirstShapeContactPointMove = new Vector2();		//вектор суммарной скорости точки контакта
+	private Vector2 oldFirstShapeContactPointMove = new Vector2();		//РІРµРєС‚РѕСЂ СЃСѓРјРјР°СЂРЅРѕР№ СЃРєРѕСЂРѕСЃС‚Рё С‚РѕС‡РєРё РєРѕРЅС‚Р°РєС‚Р°
 	private Vector2 oldSecondShapeContactPointMove = new Vector2();	
 	
 	private Vector2 firstShapeContactPointMove = new Vector2();		
@@ -170,7 +170,7 @@ public class InteractionShapes extends ComponentsHandler implements InteractionH
     	angularSecondShapeContactPointMove.selfMulti(secondShapeContactRadius 
     												* secondShape.movement.alphaRotation.value);
     	
-    	oldFirstShapeContactPointMove.set(firstShapeMovement);		//вектор суммарной скорости точки контакта
+    	oldFirstShapeContactPointMove.set(firstShapeMovement);		//РІРµРєС‚РѕСЂ СЃСѓРјРјР°СЂРЅРѕР№ СЃРєРѕСЂРѕСЃС‚Рё С‚РѕС‡РєРё РєРѕРЅС‚Р°РєС‚Р°
     	oldFirstShapeContactPointMove.addict(angularFirstShapeContactPointMove);
     	
     	oldSecondShapeContactPointMove.set(secondShapeMovement);		
@@ -240,7 +240,7 @@ public class InteractionShapes extends ComponentsHandler implements InteractionH
 	    	
 	    	firstShape.movement.alphaRotation += 	firstShapeContactPointMove.myProectionOnVector(
 	    											angularFirstShapeContactPointBase) 
-	    											/ firstShapeContactRadius;*/		//извлекаем вращательную скорость
+	    											/ firstShapeContactRadius;*/		//РёР·РІР»РµРєР°РµРј РІСЂР°С‰Р°С‚РµР»СЊРЅСѓСЋ СЃРєРѕСЂРѕСЃС‚СЊ
 	    	
 	    	firstShape.movement.currentSpeed.value = firstShape.movement.restore();
 	    	
