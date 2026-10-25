@@ -30,6 +30,11 @@ public class DoubleFractional extends DataInterface {
 		}
 	}
 	
+	@Override
+	public void applyBindingValue(double value) {
+		this.value = (double) value;
+	}
+	
 	public boolean setProperty(String name, String value) {
 		if (this.getName().contentEquals(name)) {
 			this.value = Double.parseDouble(value);

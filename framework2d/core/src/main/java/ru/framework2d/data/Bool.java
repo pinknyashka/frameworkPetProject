@@ -47,6 +47,11 @@ public class Bool extends DataInterface {
 		return null;
 	}
 	
+	@Override
+	public void applyBindingValue(double value) {
+		this.value = (value == 1);
+	}
+	
 	public boolean setProperty(String name, String value) {
 		if (this.getName().contentEquals(name)) {
 			

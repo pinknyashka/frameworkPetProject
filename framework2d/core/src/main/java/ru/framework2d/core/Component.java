@@ -192,5 +192,19 @@ public abstract class Component {
 				return;
 			}
 		}
+		
+		if (property.name.toLowerCase().endsWith("_binding")) {
+			
+			String dataName = property.name.substring(0, property.name.length() - "_binding".length());
+			
+			for (DataInterface innerData : lstData) {
+				
+				if (innerData.getName().equalsIgnoreCase(dataName)) {
+					innerData.setBinding(property.data.toString());
+					return;
+				}
+			}
+			Log.w(LOG_TAG, _name + ": no data named " + dataName + " to bind for property " + property.name);
+		}
 	}
 }

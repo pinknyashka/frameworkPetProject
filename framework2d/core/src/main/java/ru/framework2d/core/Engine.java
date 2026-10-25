@@ -31,6 +31,10 @@ public abstract class Engine {	// интерфейс с которым рабо�
 	
 	protected static EnginesScheduler enginesScheduler;
 	
+	public static EntityStorage getEntityStorage() {
+		return entityStorage;
+	}
+	
 	
 	
 	public long timerMark;

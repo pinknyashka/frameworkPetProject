@@ -29,6 +29,11 @@ public class Fractional extends DataInterface {
 		}
 	}
 	
+	@Override
+	public void applyBindingValue(double value) {
+		this.value = (float) value;
+	}
+	
 	public boolean setProperty(String name, String value) {
 		if (this.getName().contentEquals(name)) {
 			this.value = (float) Double.parseDouble(value);

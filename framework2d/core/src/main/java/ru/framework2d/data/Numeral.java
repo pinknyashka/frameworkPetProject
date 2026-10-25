@@ -29,6 +29,11 @@ public class Numeral extends DataInterface {
 		}
 	}
 	
+	@Override
+	public void applyBindingValue(double value) {
+		this.value = (int) value;
+	}
+	
 	public boolean setProperty(String name, String value) {
 		if (this.getName().contentEquals(name)) {
 			this.value = (int) Double.parseDouble(value);

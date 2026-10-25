@@ -9,6 +9,8 @@ import ru.framework2d.core.Expression;
 import ru.framework2d.core.Component;
 import ru.framework2d.core.ComponentsHandler;
 
+import ru.framework2d.compat.Log;
+
 public abstract class DataInterface {
 	
 	/**
@@ -20,6 +22,7 @@ public abstract class DataInterface {
 		setValue(data);
 		setContext(data.getContext());
 		setName(data.getName());
+		if (data.bindingString.length() > 0) setBinding(data.bindingString);
 	}
 	
 	/**
@@ -94,11 +97,16 @@ public abstract class DataInterface {
 
 	boolean gotBinding = false;
 	private Expression binding;
+	private String bindingString = "";
 	public void setBinding(String binding) {
-		if (!binding.contentEquals("")) {
-			
-		}
+		if (binding.contentEquals("")) return;
+		this.bindingString = binding;
+		this.binding = new Expression(Engine.getEntityStorage());
+		gotBinding = this.binding.setExpression(this, binding);
+		Log.d("core", "binding on data " + getName() + ": <" + binding + ">; " + (gotBinding? "ok":"failed"));
 	}
+	
+	public void applyBindingValue(double value) { }
 	
 	
 	
@@ -112,9 +120,7 @@ public abstract class DataInterface {
 	
 	public void commit(Engine sender, Entity object) {
 		
-		/*if (gotBinding) {
-			value = binding.calculate();
-		}*/
+		if (gotBinding) applyBindingValue(binding.calculate());
 		linkedHandlersNum = lstLinkedHandlers.size(); 
 		
 		for (int i = 0; i < linkedHandlersNum; i++) {
