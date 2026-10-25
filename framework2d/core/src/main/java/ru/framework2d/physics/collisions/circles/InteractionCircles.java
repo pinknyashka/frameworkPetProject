@@ -24,7 +24,7 @@ public class InteractionCircles extends InteractionShapes {
 		PhysicalCircle secondCircle = (PhysicalCircle) secondReflection;
 		
 		int timeToCollision = timeToCollision(firstCircle, secondCircle);
-		
+
 		if (timeToCollision <= IntervalPhysics.MINIMAL_CALCULATION_INTERVAL){
 			
 			fromFirstToSecond.set(secondCircle.position, firstCircle.position);
@@ -40,6 +40,10 @@ public class InteractionCircles extends InteractionShapes {
 			
 			firstCircle.contactPoint.commit(masterEngine, firstCircle.entity);
 			secondCircle.contactPoint.commit(masterEngine, secondCircle.entity);
+
+			//power of the hit for the signal listeners, e.g. the sound volume
+			firstCircle.collisionSpeed.value = (float) relativeSpeedNow;
+			secondCircle.collisionSpeed.value = (float) relativeSpeedNow;
 
 			//propagate the collision signal; other subsystems react to it
 			firstCircle.collision.commit(masterEngine, firstCircle.entity);
@@ -62,6 +66,10 @@ public class InteractionCircles extends InteractionShapes {
 	private Point2 p2proectionOnRelativeMvmnt = new Point2();
 	private Point2 p1FinalPosition = new Point2();
 	
+	//relative speed of the last checked pair, px per base interval;
+	//published to the shapes when the collision signal fires
+	private double relativeSpeedNow = 0;
+	
 	private int timeToCollision(PhysicalCircle firstCircle, PhysicalCircle secondCircle) {
 
 		int interval = IntervalPhysics.PROCESSED_INTERVAL;
@@ -79,24 +87,28 @@ public class InteractionCircles extends InteractionShapes {
 
 		double range = radiusSum + speed1 + speed2;
 		if (distance < range * range) {
-			
-			if (distance < radiusSum * radiusSum) {
-				return interval;
-			}
 
 			//если хотя бы 1 тело подвижно
 			//if (speed1 > 0 || speed2 > 0) { //no reason to check cz one of them is active
-			
+
 			 //вектор относительного движения, единичный на протяжении использования
-			double relativeSpeed;// относительная скорость
 			//делаем второе тело неподвижным засчет принципа относительности
 			secondShapeMovement.set(secondCircle.movement);
 			secondShapeMovement.selfMulti(speed2);
 			relativeMovement.set(firstCircle.movement);
 			relativeMovement.selfMulti(speed1);
 			relativeMovement.decrease(secondShapeMovement);
-			relativeSpeed = relativeMovement.restore(); //теперь считаем скорость второго тела равной нулю 
-			//а скорость первого тела и его направление движение это relativeSpeed и sum соответственно 
+			relativeSpeedNow = relativeMovement.restore() / ratio; //теперь считаем скорость второго тела равной нулю
+			//а скорость первого тела и его направление движение это relativeSpeed и sum соответственно
+			double relativeSpeed = relativeSpeedNow; //относительная скорость
+
+			if (distance < radiusSum * radiusSum) {
+				toSecond.set(secondCircle.position, firstCircle.position);
+				if (toSecond.myProectionOnVector(relativeMovement) > 0) {
+					return 0;
+				}
+				return interval;
+			}
 
 			//toSecond - направлен от первого тела ко второму, не единичный
 			toSecond.set(secondCircle.position, firstCircle.position);
@@ -110,14 +122,15 @@ public class InteractionCircles extends InteractionShapes {
 				proectionRelativeMovement.selfMulti(proectionTo2ndOnRltvMvmnt);
 				p2proectionOnRelativeMvmnt.set(firstCircle.position);
 				p2proectionOnRelativeMvmnt.move(proectionRelativeMovement);
-				
+
 				//если второе тело находится достаточно близко к траектории, узкая фаза
 				if (secondCircle.position.dist(p2proectionOnRelativeMvmnt) < radiusSum) {
 					//тела наверняка столкнулись, однако есть исключения
-					
+
 					//p1newpositionition - новое положение р1 при относительном движении
 					p1FinalPosition.set(x1, y1);
 					p1FinalPosition.move(relativeMovement, relativeSpeed);
+
 					//если проекция принадлежит траектории движения или столкнулись в конечной точке, узкая фаза последнего уровня 
 					if (firstCircle.position.dist(p2proectionOnRelativeMvmnt) + p1FinalPosition.dist(p2proectionOnRelativeMvmnt) 
 							<= firstCircle.position.dist(p1FinalPosition) + 0.00001 
@@ -137,7 +150,7 @@ public class InteractionCircles extends InteractionShapes {
 						double D = b * b - 4 * K * (Xo * Xo + Yo * Yo -	radiusSum * radiusSum);
 						if (D > 0) { // если дискриминант больше нуля (должен быть больше во всех случаях, кроме равенства нулю)
 							double timeToCollision = ( -b - Math.sqrt(D)) / (2 * K);
-							if (timeToCollision >= 0) { 
+							if (timeToCollision >= 0) {
 								// V---РАЗРЕШЕНИЕ СТОЛКНОВЕНИЙ---V
 								return (int) timeToCollision;
 								// ^---РАЗРЕШЕНИЕ СТОЛКНОВЕНИЙ---^
@@ -145,8 +158,8 @@ public class InteractionCircles extends InteractionShapes {
 							else {//mt=(-b+Math.sqrt(D))/(2 * K);
 								timeToCollision = -timeToCollision - b / K;
 							}
-							
-							if (timeToCollision >= 0) 
+
+							if (timeToCollision >= 0)
 								//V---РАЗРЕШЕНИЕ СТОЛКНОВЕНИЙ---V
 								return (int) timeToCollision;
 								//^---РАЗРЕШЕНИЕ СТОЛКНОВЕНИЙ---^

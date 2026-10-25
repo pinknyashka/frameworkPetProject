@@ -34,10 +34,12 @@
     <replace name = "width" value = "DisplayWidth"/>
     <replace name = "height" value = "DisplayHeight"/>
     
-    <!-- two circles fly at each other and bump on the first physics pass;
+    <!-- fast pair: two circles fly at each other and bump on the first physics pass;
          centers start 1 px apart from contact (9 px) so the collision root
          lands inside MINIMAL_CALCULATION_INTERVAL and the bump sound fires;
-         used to verify the collision bump sound (SoundPlayer / GameResources.getSound) -->
+         used to verify the collision bump sound (SoundPlayer / GameResources.getSound).
+         slow pair: closes 2 px per pass, 28 passes away, so its quiet hit
+         (volume ramp floor) lands after the SoundPlayer 120 ms rate limit -->
     <entity name = "bump_left">
         <circle position:x = "-4.5" position:y = "0" radius = "4" weight = "0.1" movement:currentSpeed = "5"/>
         <body roughness = "0.1"/>
@@ -48,5 +50,16 @@
         <circle position:x = "4.5" position:y = "0" radius = "4" weight = "0.1" movement:currentSpeed = "5" movement:x = "-1"/>
         <body roughness = "0.1"/>
     </entity>
-    
+
+    <entity name = "slow_left">
+        <circle position:x = "-32" position:y = "24" radius = "4" weight = "0.1" movement:currentSpeed = "1"/>
+        <body roughness = "0.1"/>
+        <audio sound = "bump" volume = "1"/>
+    </entity>
+
+    <entity name = "slow_right">
+        <circle position:x = "32" position:y = "24" radius = "4" weight = "0.1" movement:currentSpeed = "1" movement:x = "-1"/>
+        <body roughness = "0.1"/>
+    </entity>
+
 </map>

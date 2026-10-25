@@ -6,6 +6,8 @@ import ru.framework2d.core.DataContext;
 import ru.framework2d.core.Entity;
 
 import ru.framework2d.data.DataInterface;
+import ru.framework2d.physics.PhysicalInterface;
+import ru.framework2d.physics.collisions.PhysicalShape;
 
 import ru.framework2d.compat.Log;
 
@@ -38,9 +40,28 @@ public class HandlerSounds extends ComponentsHandler {
 					if (volume < 0f) volume = 0f;
 					else if (volume > 1f) volume = 1f;
 
+					//scale by the power of the hit: faster relative speed -> louder
+					for (PhysicalInterface physical : object.lstPhysicals) {
+						if (physical instanceof PhysicalShape) {
+							PhysicalShape shape = (PhysicalShape) physical;
+
+							float min = audio.minVolume.value;
+							if (min < 0f) min = 0f;
+							else if (min > 1f) min = 1f;
+
+							double full = audio.fullVolumeSpeed.value;
+							double ratio = (full > 0f) ? shape.collisionSpeed.value / full : 1f;
+							if (ratio < 0) ratio = 0;
+							else if (ratio > 1) ratio = 1;
+
+							volume = (float) (volume * (min + (1f - min) * ratio));
+							break;
+						}
+					}
+
 					SoundPlayer.play(audio.sound.value, volume);
 
-					Log.d(LOG_TAG, name + ": " + object.name + " reacts to <" + signalContext.name + "> -> play " + audio.sound.value + ";");
+					Log.d(LOG_TAG, name + ": " + object.name + " reacts to <" + signalContext.name + "> -> play " + audio.sound.value + " vol " + volume + ";");
 					return true;
 				}
 			}

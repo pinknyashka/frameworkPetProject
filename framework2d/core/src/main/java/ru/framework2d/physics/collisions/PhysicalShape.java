@@ -19,6 +19,10 @@ public abstract class PhysicalShape extends PhysicalInterface {
 
 	public Vector3 impulse = new Vector3();
 
+	//relative speed (px per base interval) at the last collision; written by the
+	//interaction that fires the collision signal, read by its listeners (e.g. sound volume)
+	public Fractional collisionSpeed = new Fractional();
+
 	//the collision signal, propagated to other subsystems that react to it
 	public Trigger collision = new Trigger();
 	

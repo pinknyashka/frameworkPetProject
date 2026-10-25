@@ -19,6 +19,13 @@ public class AudioComponent extends Component {
 	//playback volume, 0..1
 	public Fractional volume = new Fractional(1.0f);
 
+	//relative collision speed (px per base interval) that plays the sound at full volume;
+	//slower collisions ramp the volume down to minVolume
+	public Fractional fullVolumeSpeed = new Fractional(10.0f);
+
+	//volume factor (0..1) of the slowest collision
+	public Fractional minVolume = new Fractional(0.15f);
+
 	@Override
 	public String getShortClassName() {
 		return SHORT_CLASS_NAME;
