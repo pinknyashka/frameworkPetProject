@@ -136,6 +136,7 @@ The old Android asset-to-SD copying behavior from the pre-migration app is not p
 - `<context name= value= [transferValue=]/>` aliases data fields into shared `DataContext`s.
 - Attribute values are evaluated as arithmetic (`width/24`, `100*8/9`), with `<replace name= value=/>` substitutions; `DisplayWidth`/`DisplayHeight` are pre-seeded from `Gdx.graphics.getWidth()` / `Gdx.graphics.getHeight()`. Prefix a value with `%s` to force a literal string.
 - `<prototype>` defines a template; `HandlerRespawns` instantiates copies from it.
+- A component data field can be bound to a live expression with a `<dataName>_binding="..."` attribute; the expression is re-evaluated on every `commit()` of that data, and the result is written back before handler propagation. Refs to entities parsed later in the map are deferred and re-resolve at runtime (see `plans/binding-plan.md`, `assets/xml/binding_test.xml`).
 
 The active runtime currently uses `checkers_tree.xml` because its engine tags match the current `EnginesManager.connectEngine` schema. The other shipped maps remain as data files, but they use older/preview engine tag styles and are not loaded by the current bridge.
 

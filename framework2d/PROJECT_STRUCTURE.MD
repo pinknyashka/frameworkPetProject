@@ -50,7 +50,7 @@ The desktop smoke run currently uses `checkers_tree` as the default map and exit
 | `gradlew`, `gradlew.bat` | Gradle wrapper scripts. |
 | `gradle/wrapper/gradle-wrapper.properties` | Wrapper configuration, Gradle `8.7`. |
 | `local.properties` | Machine-local Android SDK pointer. Must point `sdk.dir` to a valid Android SDK on the current machine. |
-| `plans/binding-plan.md` | Working plan for a future/pending data-binding feature. Not part of the stack migration itself. |
+| `plans/binding-plan.md` | Plan + verification result for the data-binding feature (`<dataName>_binding` map attributes); implemented and smoke-verified, no longer pending. |
 | `changelog.txt` | Legacy dated changelog. Russian, UTF-8. |
 | `AndroidManifest.xml` | Legacy Eclipse-era Android manifest. Not used by the active Android module. |
 | `build.xml` | Legacy ANT build file. Not used by Gradle. |
@@ -438,6 +438,7 @@ Runtime config consumed by migrated `GameResources`. Defines Maps/Images/Sounds 
 | File | Description |
 |---|---|
 | `checkers_tree.xml` | Currently the default active runtime map. Uses the current engine-tag schema: `<direct package="..." engineName="...">`, `<handler subpackage="..." engineName="...">`, `<interaction subpackage="..." engineName="...">`, `<sub subpackage="..." engineName="...">`. |
+| `binding_test.xml` | Smoke/verification map for the data-binding feature (`<*_binding` attributes on component data fields); loadable via `--map=binding_test` in the desktop run. |
 | `battle_checkers.xml` | Legacy/preview map kept for compatibility and reference. Uses an older engine-tag style (`name = "physical"`, etc.) that does not currently match `EnginesManager.connectEngine`'s reflective schema. Not loaded by the current bridge. |
 | `checkers_with_blocks.xml` | Legacy/preview block-phase map kept for compatibility and reference. Uses engine-tag attributes/styles that do not currently match the active runtime bridge's parser expectations. Not loaded by the current bridge. |
 
