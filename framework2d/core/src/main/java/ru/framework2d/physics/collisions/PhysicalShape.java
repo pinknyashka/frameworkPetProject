@@ -4,6 +4,7 @@ import ru.framework2d.data.Area;
 import ru.framework2d.data.Bool;
 import ru.framework2d.data.Fractional;
 import ru.framework2d.data.Point3;
+import ru.framework2d.data.Trigger;
 import ru.framework2d.data.Vector3;
 import ru.framework2d.physics.PhysicalInterface;
 
@@ -17,6 +18,9 @@ public abstract class PhysicalShape extends PhysicalInterface {
 	public Point3 contactPoint = new Point3();
 
 	public Vector3 impulse = new Vector3();
+
+	//the collision signal, propagated to other subsystems that react to it
+	public Trigger collision = new Trigger();
 	
 	
 	

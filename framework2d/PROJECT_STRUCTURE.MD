@@ -41,7 +41,7 @@ The desktop smoke run currently uses `checkers_tree` as the default map and exit
 
 | File | Description |
 |---|---|
-| `AGENTS.md` | Older agent instructions from the Eclipse/ANT era. Useful for historical gotchas, especially the XML architecture, but its stack/build sections are superseded by `README.MD` and this file. |
+| `AGENTS.md` | Current operating contract for parallel agents: active Gradle stack, resource domains, runtime semaphores (`EngineLocks`), lock modes, waiting rules, test isolation, source claims, and build/verify commands. |
 | `README.MD` | Human-facing overview of the migrated stack, modules, build/run commands, resources, map format, gotchas. |
 | `PROJECT_STRUCTURE.MD` | Current file/directory map. |
 | `build.gradle` | Root Gradle build. Adds AGP classpath, common repos, project version `0.2`, `appName`, `gdxVersion = '1.14.2'`, and sets Java compile encoding to `UTF-8`. |
@@ -51,6 +51,7 @@ The desktop smoke run currently uses `checkers_tree` as the default map and exit
 | `gradle/wrapper/gradle-wrapper.properties` | Wrapper configuration, Gradle `8.7`. |
 | `local.properties` | Machine-local Android SDK pointer. Must point `sdk.dir` to a valid Android SDK on the current machine. |
 | `plans/binding-plan.md` | Plan + verification result for the data-binding feature (`<dataName>_binding` map attributes); implemented and smoke-verified, no longer pending. |
+| `plans/parallel-agents-plan.md` | Design + verification note for the runtime resource locks (`ru.framework2d.core.agents`), source/build claims, integration points, and follow-ups. |
 | `changelog.txt` | Legacy dated changelog. Russian, UTF-8. |
 | `AndroidManifest.xml` | Legacy Eclipse-era Android manifest. Not used by the active Android module. |
 | `build.xml` | Legacy ANT build file. Not used by Gradle. |
@@ -69,7 +70,7 @@ The desktop smoke run currently uses `checkers_tree` as the default map and exit
 
 | File | Description |
 |---|---|
-| `core/build.gradle` | Java library module. Adds libGDX core, `xmlpull`, and runtime XPP3 for desktop/JVM XML parsing. Source/target compatibility is `1.8`. |
+| `core/build.gradle` | Java library module. Adds libGDX core, `xmlpull`, and runtime XPP3 for desktop/JVM XML parsing. Source/target compatibility is `1.8`. Defines the runnable `lockSelfTest` JavaExec task for the parallel-agent lock layer. |
 
 ### `core/src/main/java/ru/fungames/checkers/`
 
@@ -133,6 +134,25 @@ Compatibility package replacing Android API classes used by the original engine.
 Removed from the active core module:
 
 - `GameSurface.java` — the old Android `SurfaceView` integration point. The libGDX render bridge now drives drawing and input.
+
+### `core/src/main/java/ru/framework2d/core/agents/` — parallel-agent locks
+
+Runtime semaphores used by concurrent agents. Domains are fixed by `EngineResource`; `EngineLocks` is the process-wide registry. See `AGENTS.md` for the operating rules.
+
+| File | Description |
+|---|---|
+| `EngineResource.java` | Engine domains and canonical lock order (`RESOURCES`, `MODEL`, `PHYSICS`, `LOGIC`, `TOUCH`, `GRAPHICS`, `SOUND`, `SCHEDULER`) plus package-to-domain default. |
+| `LockMode.java` | `READ` (shared), `WRITE` (exclusive mutation), `TEST` (exclusive test isolation). |
+| `AgentScoped.java` | Interface for handlers/engines that declare their owned `EngineResource` and diagnostic scope name. |
+| `EngineLocks.java` | Acquire/tryAcquire/isAvailable/status/snapshot/describe registry with owner, reason, waiters, timeouts, reentrancy, writer preference, lock-order enforcement, and upgrade rejection. |
+| `ResourceLease.java` | AutoCloseable lock grant; close it on the acquiring thread, preferably with try-with-resources. |
+| `LockStatus.java` | Immutable holder/waiter snapshot; exposes `allowsRead()`, `allowsWrite()`, `allows(mode)`, `heldBy(agent)`, `describe()`. |
+| `LockBusyException.java` | Non-blocking acquisition failure with the `LockStatus` snapshot. |
+| `LockTimeoutException.java` | Timed/interrupted wait failure with the snapshot and waited time. |
+| `LockOrderException.java` | Rejects acquisition out of canonical `EngineResource` order. |
+| `AgentTestScope.java` | Acquires exclusive `TEST` leases on several domains in order and releases them in reverse. |
+
+`core/src/test/java/ru/framework2d/core/agents/EngineLocksSelfTest.java` is a plain-`main` verification harness for the lock layer; run it with `.\gradlew.bat :core:lockSelfTest`.
 
 ### `core/src/main/java/ru/framework2d/data/` — typed data values
 

@@ -3,12 +3,14 @@ package ru.framework2d.core;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
@@ -158,6 +160,52 @@ public class GameResources {
         px.setColor(1, 0, 1, 1);
         px.fill();
         return new Bitmap(new Texture(px));
+    }
+
+    // ------------------------------------------------- Sounds ---------------------------------------
+    private final HashMap<String, Sound> lstSounds = new HashMap<String, Sound>();
+
+    public Sound getSound(String soundName) {
+        soundName = soundName.replaceFirst("\\.ogg$", "").replaceFirst("\\.wav$", "");
+
+        if (lstSounds.containsKey(soundName)) {
+            return lstSounds.get(soundName);
+        }
+
+        FileHandle located = tryLocateSound(Gdx.files.external(APP_DIRECTORY + "/" + mConfiguration.soundsDirectory), soundName);
+        if (located == null) {
+            located = tryLocateSound(Gdx.files.internal(mConfiguration.soundsDirectory), soundName);
+        }
+
+        Sound loaded = (located != null) ? newSound(located) : null;
+        if (loaded == null && located != null) {
+            Log.w(LOG_TAG, "Cant load sound: " + located.name() + "; Exception;");
+        } else if (located == null) {
+            Log.w(LOG_TAG, "Cant load sound <" + soundName + ">;");
+        }
+        lstSounds.put(soundName, loaded);
+        return loaded;
+    }
+
+    private FileHandle tryLocateSound(FileHandle dir, String name) {
+        FileHandle ogg = dir.child(name + ".ogg");
+        if (ogg.exists()) {
+            return ogg;
+        }
+        FileHandle wav = dir.child(name + ".wav");
+        if (wav.exists()) {
+            return wav;
+        }
+        return null;
+    }
+
+    private Sound newSound(FileHandle handle) {
+        try {
+            return Gdx.audio.newSound(handle);
+        } catch (Exception e) {
+            Log.w(LOG_TAG, "Cant load sound: " + handle.name() + "; Exception;");
+            return null;
+        }
     }
 
     // ------------------------------------------------- Maps ---------------------------------------

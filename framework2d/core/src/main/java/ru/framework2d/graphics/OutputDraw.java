@@ -3,6 +3,11 @@ package ru.framework2d.graphics;
 import java.util.ArrayList;
 
 import ru.framework2d.core.Engine;
+import ru.framework2d.core.agents.EngineLocks;
+import ru.framework2d.core.agents.EngineResource;
+import ru.framework2d.core.agents.LockBusyException;
+import ru.framework2d.core.agents.LockMode;
+import ru.framework2d.core.agents.ResourceLease;
 import ru.framework2d.touches.WorldPointer;
 import ru.framework2d.compat.Canvas;
 import ru.framework2d.compat.Paint;
@@ -37,28 +42,45 @@ public class OutputDraw extends Engine implements GraphicalPeriphery {
 	
 	private int graphicalsNum = 0;
 
+	private long lastLockWarning;
+
 	public void draw(Canvas c) {
+		
+		ResourceLease lease;
+		try {
+			lease = EngineLocks.tryAcquire(EngineResource.GRAPHICS, LockMode.READ, "render frame");
+		} catch (LockBusyException e) {
+			long now = System.currentTimeMillis();
+			if (now - lastLockWarning > 2000L) {
+				Log.w(LOG_TAG, "Draw skipped: " + e.describe());
+				lastLockWarning = now;
+			}
+			return;
+		}
 		
 		canvas = c;
 		timerMark = System.currentTimeMillis();
 		isDrawingProgress = true;
 		
-		Log.d(LOG_TAG, "Start draw " + (timerMark - enginesScheduler.mark) + " ms later than call;");
-		
-		graphicalsNum = lstGraphicals.size();
-		
-		for (int graphicalNo = 0; graphicalNo < graphicalsNum; graphicalNo++) {
+		try {
+			Log.d(LOG_TAG, "Start draw " + (timerMark - enginesScheduler.mark) + " ms later than call;");
 			
-			graphical = lstGraphicals.get(graphicalNo);
+			graphicalsNum = lstGraphicals.size();
 			
-			graphical.draw(c, paint);
+			for (int graphicalNo = 0; graphicalNo < graphicalsNum; graphicalNo++) {
+				
+				graphical = lstGraphicals.get(graphicalNo);
+				
+				graphical.draw(c, paint);
+			}
+			
+			Log.d(LOG_TAG, "Over draw; Spent " + (System.currentTimeMillis() - timerMark) 
+							+ " ms for draw " + lstGraphicals.size() + " graphicals;");
+		} finally {
+			canvas = null;
+			isDrawingProgress = false;
+			lease.close();
 		}
-		
-		canvas = null;
-		isDrawingProgress = false;
-		
-		Log.d(LOG_TAG, "Over draw; Spent " + (System.currentTimeMillis() - timerMark) 
-						+ " ms for draw " + lstGraphicals.size() + " graphicals;");
 		
 		enginesScheduler.overDraw();
 	}

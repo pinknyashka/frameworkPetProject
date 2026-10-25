@@ -22,6 +22,10 @@
         </handler>
     </direct>
     
+    <direct package = "ru.framework2d.sound" engineName = "DirectSound">
+        <handler engineName = "HandlerSounds"/>
+    </direct>
+    
     <direct package = "ru.framework2d.touches" engineName = "DirectTouches">
     	<handler subpackage = "screen" engineName = "HandlerTouchScreen"> 
             <context name = "touched" value = "fingerTouched"/>
@@ -235,6 +239,8 @@
         
 		        <!-- physical components -->
 		   		<circle position:alpha = "3.14" radius = "4" weight = "0.1"/>
+ 				
+ 				<audio sound = "bump" volume = "1"/>
 		   		
 				<body roughness = "0.1"/>
 				
@@ -309,6 +315,8 @@
 			    <circle radius = "4" weight = "0.1" isStatic = "false">
 				    <context name = "contactPoint" value = "pointPosition"/>
 				</circle>
+ 				
+ 				<audio sound = "bump" volume = "1"/>
 				 
 				<body roughness = "0.1"/>
 				

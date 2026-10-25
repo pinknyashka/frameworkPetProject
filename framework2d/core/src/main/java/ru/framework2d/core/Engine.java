@@ -35,6 +35,10 @@ public abstract class Engine {	// интерфейс с которым рабо�
 		return entityStorage;
 	}
 	
+	public static GameResources getResources() {
+		return resources;
+	}
+	
 	
 	
 	public long timerMark;

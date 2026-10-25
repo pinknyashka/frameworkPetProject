@@ -3,6 +3,10 @@ package ru.framework2d.core;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import ru.framework2d.core.agents.EngineLocks;
+import ru.framework2d.core.agents.EngineResource;
+import ru.framework2d.core.agents.LockMode;
+
 import ru.framework2d.compat.Log;
 
 public class EnginesScheduler extends Engine {
@@ -26,8 +30,20 @@ public class EnginesScheduler extends Engine {
 	 * Call for start scheduling. Possibly that scheduler will ignore this call if drawing is in process
 	 * @param delay - delay before it's starts 
 	 */
+	private long lastPauseLog;
+
 	@Override
 	public boolean startWork(int delay) {
+		
+		if (!EngineLocks.isAvailable(EngineResource.SCHEDULER, LockMode.READ)) {
+			long now = System.currentTimeMillis();
+			if (now - lastPauseLog > 2000L) {
+				Log.d("core", "Scheduler paused: "
+						+ EngineLocks.describe(EngineResource.SCHEDULER));
+				lastPauseLog = now;
+			}
+			return false;
+		}
 		
 		if (!isInProcess() && haveWork() && !isDrawCalled) {
 			

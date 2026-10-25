@@ -12,6 +12,9 @@
             <context name = "isEnabled" value = "exist"/>
         </handler>
     </direct>
+    <direct name = "sound">
+        <handler name = "sounds"/>
+    </direct>
     <direct name = "input">
     	<handler name = "touchScreen"> 
             <context name = "touched" value = "fingerTouched"/>
@@ -163,8 +166,9 @@
     <prototype name = "checkerwhite">
    		<circle angle = "3.14" radius = "checkerradius" mass = "0.1">
    		</circle>
-		<body roughness = "0.2">
-		</body>
+ 		<body roughness = "0.2">
+ 		</body>
+ 		<audio sound = "bump" volume = "1"/>
 		<shadow posz = "0" geometry:type = "v_cylinder" geometry:radius = "checkerradius" geometry:height = "2.0" 
 		    	rotatable = "false" layer = "0" radius = "checkerradius*2" ltransparency = "0.3">
 			<context name = "localPos" value = "shadowAngle"/>
@@ -206,8 +210,9 @@
 		    <context name = "contactPoint" value = "pointPosition"/>
 		</circle> 
 
-		<body position:x = "0" roughness = "0.2">
-		</body>
+ 		<body position:x = "0" roughness = "0.2">
+ 		</body>
+ 		<audio sound = "bump" volume = "1"/>
 		<shadow posz = "0" geometry:type = "v_cylinder" geometry:radius = "checkerradius" geometry:height = "2.0" 
 		    	rotatable = "false" layer = "0" radius = "checkerradius*2" ltransparency = "0.3">
 			<context name = "localPos" value = "shadowAngle"/>

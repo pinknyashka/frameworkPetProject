@@ -1,0 +1,52 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<map version = "1.0" name = "sound test" parallel = "false" preview = "checker_preview.png">
+     
+    <direct package = "ru.framework2d.physics" engineName = "IntervalPhysics" 
+        ph_unit = "DisplayWidth/10240" 
+        interval_limit = "70" 
+        impulse_limit = "5">
+        
+        <handler subpackage = "collisions" engineName = "HandlerShapesCollisions">
+            <interaction subpackage = "circles" engineName = "InteractionCircles"/>
+            
+            <context name = "impulse" value = "directImpulse"/>
+            <context name = "isEnabled" value = "exist"/>
+        </handler>
+        
+        <handler subpackage = "medium" engineName = "HandlerMediums">
+            <interaction engineName = "InteractionMediumBody"/>
+            
+            <context name = "isEnabled" value = "exist"/>
+        </handler>
+    </direct>
+    
+    <direct package = "ru.framework2d.sound" engineName = "DirectSound">
+        <handler engineName = "HandlerSounds"/>
+    </direct>
+
+    <direct package = "ru.framework2d.graphics" engineName = "OutputDraw">
+        <handler subpackage = "draw" engineName = "HandlerDraw">
+            <sub subpackage = "sprite" engineName = "SubSpriteDraw"/>
+            <sub engineName = "SubBasicGraphical"/>
+        </handler>
+    </direct>
+    
+    <replace name = "width" value = "DisplayWidth"/>
+    <replace name = "height" value = "DisplayHeight"/>
+    
+    <!-- two circles fly at each other and bump on the first physics pass;
+         centers start 1 px apart from contact (9 px) so the collision root
+         lands inside MINIMAL_CALCULATION_INTERVAL and the bump sound fires;
+         used to verify the collision bump sound (SoundPlayer / GameResources.getSound) -->
+    <entity name = "bump_left">
+        <circle position:x = "-4.5" position:y = "0" radius = "4" weight = "0.1" movement:currentSpeed = "5"/>
+        <body roughness = "0.1"/>
+        <audio sound = "bump" volume = "1"/>
+    </entity>
+
+    <entity name = "bump_right">
+        <circle position:x = "4.5" position:y = "0" radius = "4" weight = "0.1" movement:currentSpeed = "5" movement:x = "-1"/>
+        <body roughness = "0.1"/>
+    </entity>
+    
+</map>

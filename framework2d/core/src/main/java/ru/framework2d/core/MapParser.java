@@ -13,6 +13,10 @@ import ru.framework2d.data.Fractional;
 import ru.framework2d.data.Numeral;
 import ru.framework2d.data.Text;
 
+import ru.framework2d.core.agents.EngineLocks;
+import ru.framework2d.core.agents.EngineResource;
+import ru.framework2d.core.agents.LockMode;
+import ru.framework2d.core.agents.ResourceLease;
 
 import ru.framework2d.compat.Log;
 
@@ -74,6 +78,13 @@ public class MapParser {
     //WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWvv-Parsing-vvWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW
     
     public EntityStorage parseMap(XmlPullParser xpparser) {
+        try (ResourceLease lease = EngineLocks.acquire(
+                EngineResource.MODEL, LockMode.WRITE, "map parse", EngineLocks.BUILD_WAIT_MS)) {
+            return parseMapLocked(xpparser);
+        }
+    }
+
+    private EntityStorage parseMapLocked(XmlPullParser xpparser) {
     	
         Log.d(LOG_TAG, "Start map parsing...");
         

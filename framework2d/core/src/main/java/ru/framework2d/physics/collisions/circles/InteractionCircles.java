@@ -40,7 +40,11 @@ public class InteractionCircles extends InteractionShapes {
 			
 			firstCircle.contactPoint.commit(masterEngine, firstCircle.entity);
 			secondCircle.contactPoint.commit(masterEngine, secondCircle.entity);
-			
+
+			//propagate the collision signal; other subsystems react to it
+			firstCircle.collision.commit(masterEngine, firstCircle.entity);
+			secondCircle.collision.commit(masterEngine, secondCircle.entity);
+
 			return true;
 			
 		}
@@ -49,7 +53,7 @@ public class InteractionCircles extends InteractionShapes {
 		}
 		return false;
 	}
-	
+
 	private Vector2 relativeMovement = new Vector2();
 	private Vector2 toSecond = new Vector2();
 	private Vector2 secondShapeMovement = new Vector2();
@@ -59,16 +63,16 @@ public class InteractionCircles extends InteractionShapes {
 	private Point2 p1FinalPosition = new Point2();
 	
 	private int timeToCollision(PhysicalCircle firstCircle, PhysicalCircle secondCircle) {
-		
+
 		int interval = IntervalPhysics.PROCESSED_INTERVAL;
-		
+
 		double ratio = (double) interval / (double) IntervalPhysics.BASE_PHYSICAL_INTERVAL;
 		double speed1 = firstCircle.movement.currentSpeed.value * ratio;
 		double speed2 = secondCircle.movement.currentSpeed.value * ratio;
-		
+
 		double x1 = firstCircle.position.x.value, y1 = firstCircle.position.y.value;
 		double x2 = secondCircle.position.x.value, y2 = secondCircle.position.y.value;
-		
+
 		double distance = (x1 - x2)	* (x1 - x2) + (y1 - y2) * (y1 - y2);
 		
 		double radiusSum = firstCircle.occupiedArea.radius + secondCircle.occupiedArea.radius;

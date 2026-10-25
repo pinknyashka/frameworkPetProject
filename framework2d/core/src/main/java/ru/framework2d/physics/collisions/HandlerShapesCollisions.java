@@ -207,13 +207,13 @@ public class HandlerShapesCollisions extends ComponentsHandler {
 				
 				PhysicalShape activeShape = (PhysicalShape) lstActive.get(activeNo);
 				
-				if (activeShape.isActive() && 
+				if (activeShape.isActive() &&
 						activeShape.step(IntervalPhysics.PROCESSED_INTERVAL, ratio)) {
-					
+
 					if (stepProcessed) {
 						activeShape.position.commit(this, activeShape.entity);
 					}
-				} 
+				}
 				else {
 					activeShape.movement.stop();
 					lstActive.remove(activeShape);

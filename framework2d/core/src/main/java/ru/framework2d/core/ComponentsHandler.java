@@ -7,9 +7,15 @@ import java.util.ArrayList;
 
 import ru.framework2d.data.DataInterface;
 
+import ru.framework2d.core.agents.AgentScoped;
+import ru.framework2d.core.agents.EngineLocks;
+import ru.framework2d.core.agents.EngineResource;
+import ru.framework2d.core.agents.LockMode;
+import ru.framework2d.core.agents.ResourceLease;
+
 import ru.framework2d.compat.Log;
 
-public abstract class ComponentsHandler extends Engine implements Factory {
+public abstract class ComponentsHandler extends Engine implements Factory, AgentScoped {
 
 	private static final String LOG_TAG = "core";
 
@@ -90,6 +96,32 @@ public abstract class ComponentsHandler extends Engine implements Factory {
 		}
 	}
 	
+	@Override
+	public EngineResource scopeResource() {
+		return EngineResource.forPackage(getClass().getPackage().getName());
+	}
+
+	@Override
+	public String scopeName() {
+		String path = (fullName == null || fullName.length() == 0) ? name : fullName;
+		return EngineLocks.currentAgent() + ":" + path;
+	}
+
+	/**
+	 * Acquire this handler's declared domain. Agents should use this instead
+	 * of touching handler state directly; on contention it waits and reports
+	 * the owner/reason through {@link ru.framework2d.core.agents.LockTimeoutException}.
+	 */
+	public ResourceLease lockScope(LockMode mode, String reason) {
+		return EngineLocks.acquire(scopeResource(), mode, EngineLocks.currentAgent(),
+				scopeName() + " " + reason, EngineLocks.DEFAULT_WAIT_MS);
+	}
+
+	public ResourceLease lockScope(LockMode mode, String reason, long timeoutMs) {
+		return EngineLocks.acquire(scopeResource(), mode, EngineLocks.currentAgent(),
+				scopeName() + " " + reason, timeoutMs);
+	}
+
 	public ComponentsHandler masterHandler;
 	
 	public void setMasterHandler(ComponentsHandler handler) {
