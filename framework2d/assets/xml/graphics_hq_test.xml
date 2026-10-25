@@ -1,0 +1,79 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<map version = "1.0" name = "hq graphics test" parallel = "false">
+
+    <direct package = "ru.framework2d.graphics.render" engineName = "OutputRenderHQ"
+        quality = "high" shadowBufferScale = "0.5" shadows = "true">
+
+        <handler engineName = "HandlerRenderHQ">
+            <sub subpackage = "camera" engineName = "CameraRenderSystem"/>
+            <sub subpackage = "light" engineName = "LightRenderSystem"/>
+            <sub subpackage = "sprite" engineName = "SpriteRenderSystem"/>
+            <sub subpackage = "relief" engineName = "ReliefRenderSystem"/>
+            <sub subpackage = "shadow" engineName = "ShadowRenderSystem"/>
+            <sub subpackage = "text" engineName = "TextRenderSystem"/>
+        </handler>
+
+        <handler package = "ru.framework2d.graphics.cameras" engineName = "HandlerCameras"/>
+    </direct>
+
+    <replace name = "width" value = "DisplayWidth"/>
+    <replace name = "height" value = "DisplayHeight"/>
+
+    <entity name = "background" single = "true">
+        <pict spriteName = "board" layer = "-3"
+            position:x = "0" position:y = "0"
+            size:x = "160" size:y = "160"/>
+    </entity>
+
+    <entity name = "basecam" single = "true">
+        <camera
+            name = "basecam"
+            position:x = "width/2" position:y = "height/2"
+            eyePos:x = "0" eyePos:y = "0"
+            zoom = "width/100.0"/>
+    </entity>
+
+    <entity name = "light" single = "true">
+        <light
+            position:x = "0" position:y = "0" position:z = "100/16"
+            radius = "1000" color = "#FFFFFF" intensity = "0.9" diffuse = "0.3"
+            ambient = "0.45" castsShadows = "true"/>
+    </entity>
+
+    <entity name = "demo_white" single = "true">
+        <pict radius = "4" spriteName = "firehead_sprite" layer = "2"
+            position:x = "-15" position:y = "0" spriteCollumnsNum = "3"/>
+        <relief
+            position:x = "-15" position:y = "0"
+            size:x = "8" size:y = "8" layer = "2.3"
+            reliefName = "checker_relief_sprite" spriteCollumnsNum = "5" spriteRowsNum = "4"
+            isRotatable = "false"/>
+        <shadow
+            position:x = "-15" position:y = "0" position:z = "0"
+            layer = "1.9" opacity = "0.45" softness = "2.0"
+            geometry:type = "v_cylinder" geometry:radius = "4" geometry:height = "2"/>
+        <text
+            position:x = "-15" position:y = "10"
+            size:x = "40" size:y = "10" layer = "5"
+            text = "HQ SPRITE" color = "#FFFFFF" fontSize = "12"/>
+    </entity>
+
+    <entity name = "demo_black" single = "true">
+        <pict radius = "4" spriteName = "bonehead" layer = "2"
+            position:x = "15" position:y = "0"/>
+        <relief
+            position:x = "15" position:y = "0" position:z = "2"
+            size:x = "8" size:y = "8" layer = "2.3"
+            reliefName = "checker_relief_sprite" spriteCollumnsNum = "5" spriteRowsNum = "4"
+            isRotatable = "false"/>
+        <shadow
+            position:x = "15" position:y = "0" position:z = "0"
+            layer = "1.9" opacity = "0.45" softness = "2.0"
+            geometry:type = "v_cylinder" geometry:radius = "4" geometry:height = "2"/>
+        <text
+            position:x = "15" position:y = "10"
+            size:x = "40" size:y = "10" layer = "5"
+            text = "HQ LIGHT" color = "#FFFFFF" fontSize = "12"/>
+    </entity>
+
+</map>

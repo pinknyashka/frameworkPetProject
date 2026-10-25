@@ -15,6 +15,7 @@ import ru.framework2d.compat.Canvas;
 import ru.framework2d.core.Engine;
 import ru.framework2d.core.GameCore;
 import ru.framework2d.graphics.GraphicalPeriphery;
+import ru.framework2d.graphics.RenderPeriphery;
 import ru.framework2d.touches.TouchPeriphery;
 
 import ru.framework2d.gdx.TouchBridge;
@@ -77,6 +78,10 @@ public class CheckersGame extends Game {
         // y-down projection, top-left origin (matches the engine's Android coordinate space).
         camera.setToOrtho(false, width, height);
         camera.update();
+
+        if (periphery instanceof RenderPeriphery) {
+            ((RenderPeriphery) periphery).resize(width, height, camera.combined);
+        }
     }
 
     @Override
@@ -89,11 +94,15 @@ public class CheckersGame extends Game {
         }
 
         camera.update();
-        canvas.setFrame(batch, camera.combined, font);
-        batch.setProjectionMatrix(camera.combined);
-        batch.begin();
-        periphery.draw(canvas);
-        batch.end();
+        if (periphery instanceof RenderPeriphery) {
+            ((RenderPeriphery) periphery).renderFrame(camera.combined);
+        } else {
+            canvas.setFrame(batch, camera.combined, font);
+            batch.setProjectionMatrix(camera.combined);
+            batch.begin();
+            periphery.draw(canvas);
+            batch.end();
+        }
 
         if (exitAfterFrames > 0 && ++frames >= exitAfterFrames) {
             if (screenshotPath != null) {
@@ -110,6 +119,9 @@ public class CheckersGame extends Game {
 
     @Override
     public void dispose() {
+        if (periphery instanceof RenderPeriphery) {
+            ((RenderPeriphery) periphery).dispose();
+        }
         if (batch != null) {
             batch.dispose();
         }

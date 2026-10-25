@@ -1,0 +1,44 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<map version = "1.0" name = "hq sprite test" parallel = "false">
+
+    <direct package = "ru.framework2d.graphics.render" engineName = "OutputRenderHQ"
+        quality = "high" shadowBufferScale = "0.5" shadows = "false">
+
+        <handler engineName = "HandlerRenderHQ">
+            <sub subpackage = "camera" engineName = "CameraRenderSystem"/>
+            <sub subpackage = "light" engineName = "LightRenderSystem"/>
+            <sub subpackage = "sprite" engineName = "SpriteRenderSystem"/>
+            <sub subpackage = "relief" engineName = "ReliefRenderSystem"/>
+            <sub subpackage = "shadow" engineName = "ShadowRenderSystem"/>
+            <sub subpackage = "text" engineName = "TextRenderSystem"/>
+        </handler>
+    </direct>
+
+    <replace name = "width" value = "DisplayWidth"/>
+    <replace name = "height" value = "DisplayHeight"/>
+
+    <entity name = "background" single = "true">
+        <pict spriteName = "board" layer = "-3"
+            position:x = "0" position:y = "0"
+            size:x = "160" size:y = "160"/>
+    </entity>
+
+    <entity name = "basecam" single = "true">
+        <camera
+            name = "basecam"
+            position:x = "width/2" position:y = "height/2"
+            eyePos:x = "0" eyePos:y = "0"
+            zoom = "width/100.0"/>
+    </entity>
+
+    <entity name = "red" single = "true">
+        <pict radius = "10" spriteName = "firehead_sprite" layer = "2"
+            position:x = "-20" position:y = "0" spriteCollumnsNum = "3"/>
+    </entity>
+
+    <entity name = "dark" single = "true">
+        <pict radius = "10" spriteName = "bonehead" layer = "2"
+            position:x = "20" position:y = "0"/>
+    </entity>
+
+</map>

@@ -1,6 +1,8 @@
 package ru.framework2d.graphics.draw.shadows;
 
 import ru.framework2d.core.Property;
+import ru.framework2d.data.Bool;
+import ru.framework2d.data.Fractional;
 import ru.framework2d.data.Geometry;
 import ru.framework2d.data.GeometryBlock;
 import ru.framework2d.data.GeometryVerticalCylinder;
@@ -23,6 +25,14 @@ public class OutputGraphicalShadow extends OutputGraphicalInterface {
 	public Path drawingArea;
 	
 	public boolean isDynamic = false;
+	
+	public Fractional softness = new Fractional(2.0f);
+	
+	public Fractional opacity = new Fractional(0.5f);
+	
+	public Bool isStatic = new Bool(false);
+	
+	public Bool castShadows = new Bool(true);
 	
 	public OutputGraphicalShadow() { super(); };
 	

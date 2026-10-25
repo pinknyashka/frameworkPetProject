@@ -25,6 +25,12 @@ public class OutputGraphicalLight extends OutputGraphicalInterface {
 	public Fractional intensity = new Fractional(1.0f);
 	
 	public Fractional diffuse = new Fractional(0.0f);
+	
+	public Fractional ambient = new Fractional(-1.0f);
+	
+	public Bool castsShadows = new Bool(true);
+	
+	public Fractional shadowSoftness = new Fractional(2.0f);
 
 	
 	public Bool glow = new Bool(false);
