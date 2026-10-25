@@ -361,6 +361,7 @@ public class HandlerShapesCollisions extends ComponentsHandler {
 				lstShapes.add((PhysicalShape) component);
 				if (((PhysicalShape) component).isActive()) {
 					lstActive.add((PhysicalShape) component);
+					setWorkState(true);
 				}
 			}
 		}
