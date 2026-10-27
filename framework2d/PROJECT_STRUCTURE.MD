@@ -51,6 +51,7 @@ The desktop smoke run currently uses `checkers_tree` as the default map and exit
 | `gradle/wrapper/gradle-wrapper.properties` | Wrapper configuration, Gradle `8.7`. |
 | `local.properties` | Machine-local Android SDK pointer. Must point `sdk.dir` to a valid Android SDK on the current machine. |
 | `plans/binding-plan.md` | Plan + verification result for the data-binding feature (`<dataName>_binding` map attributes); implemented and smoke-verified, no longer pending. |
+| `plans/new-subsystem-plan.md` | Runbook for adding a new subsystem via signal fields; verified against the sound subsystem. |
 | `plans/parallel-agents-plan.md` | Design + verification note for the runtime resource locks (`ru.framework2d.core.agents`), source/build claims, integration points, and follow-ups. |
 | `changelog.txt` | Legacy dated changelog. Russian, UTF-8. |
 | `AndroidManifest.xml` | Legacy Eclipse-era Android manifest. Not used by the active Android module. |
