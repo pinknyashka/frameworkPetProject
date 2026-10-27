@@ -25,6 +25,9 @@ Current build verification:
 
 ```powershell
 .\gradlew.bat :core:compileJava
+.\gradlew.bat :core:test
+.\gradlew.bat :core:lockSelfTest
+.\gradlew.bat :core:check
 .\gradlew.bat :lwjgl3:build
 .\gradlew.bat :android:assembleDebug
 ```
@@ -53,6 +56,7 @@ The desktop smoke run currently uses `checkers_tree` as the default map and exit
 | `plans/binding-plan.md` | Plan + verification result for the data-binding feature (`<dataName>_binding` map attributes); implemented and smoke-verified, no longer pending. |
 | `plans/new-subsystem-plan.md` | Runbook for adding a new subsystem via signal fields; verified against the sound subsystem. |
 | `plans/parallel-agents-plan.md` | Design + verification note for the runtime resource locks (`ru.framework2d.core.agents`), source/build claims, integration points, and follow-ups. |
+| `plans/tests-plan.md` | Plan, harness contract, current coverage, and pinned engine quirks for the headless `:core:test` regression suite. |
 | `changelog.txt` | Legacy dated changelog. Russian, UTF-8. |
 | `AndroidManifest.xml` | Legacy Eclipse-era Android manifest. Not used by the active Android module. |
 | `build.xml` | Legacy ANT build file. Not used by Gradle. |
@@ -71,7 +75,7 @@ The desktop smoke run currently uses `checkers_tree` as the default map and exit
 
 | File | Description |
 |---|---|
-| `core/build.gradle` | Java library module. Adds libGDX core, `xmlpull`, and runtime XPP3 for desktop/JVM XML parsing. Source/target compatibility is `1.8`. Defines the runnable `lockSelfTest` JavaExec task for the parallel-agent lock layer. |
+| `core/build.gradle` | Java library module. Adds libGDX core, `xmlpull`, and runtime XPP3 for desktop/JVM XML parsing. Source/target compatibility is `1.8`. Runs the JUnit regression suite via `test`, defines the runnable `lockSelfTest` JavaExec task for the parallel-agent lock layer, and makes `check` depend on both. |
 
 ### `core/src/main/java/ru/fungames/checkers/`
 
@@ -525,4 +529,4 @@ These files are retained during migration but are not used by the Gradle modules
 - **Other maps remain present as legacy data.** They may require map-schema updates before they can be loaded by the current engine reflection path.
 - **Sound is active.** The `sound` package contains the collision-triggered playback path; collision volume is scaled by `PhysicalShape.collisionSpeed`.
 - **Keep files UTF-8 (no BOM).** The root Gradle build compiles with `UTF-8`; the legacy cp1251 engine comments and `changelog.txt` have been re-encoded.
-- **No tests/lint/CI.** Verification is compile + desktop smoke + APK assembly + on-device run.
+- **Tests exist, but are not enough for rendering/assets.** `:core:test` runs the headless regression suite and `:core:check` adds `:core:lockSelfTest`; visual/platform correctness still needs desktop smoke, APK assembly, and on-device run.

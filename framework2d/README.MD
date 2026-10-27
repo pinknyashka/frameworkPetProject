@@ -148,13 +148,16 @@ Current verified local build/compile commands:
 
 ```powershell
 .\gradlew.bat :core:compileJava
+.\gradlew.bat :core:test
+.\gradlew.bat :core:lockSelfTest
+.\gradlew.bat :core:check
 .\gradlew.bat :lwjgl3:build
 .\gradlew.bat :android:assembleDebug
 ```
 
 The desktop smoke run currently loads `checkers_tree`, renders frames, exits, and reports no exceptions in the smoke log. Visual correctness of advanced drawing effects (shadows, reliefs, lights, clipping, gradients) still needs manual comparison/refinement.
 
-There is no automated test suite, lint task, or CI configured.
+The `:core` module has a headless JUnit regression suite (`:core:test`) plus the lock-layer self-test (`:core:lockSelfTest`); `:core:check` runs both. There is still no lint task or remote CI. See `plans/tests-plan.md` for coverage and harness rules.
 
 ## Sound
 

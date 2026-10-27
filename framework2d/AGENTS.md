@@ -2,7 +2,7 @@
 
 Operating contract for humans and AI agents working on `framework2d`.
 
-Last updated: 2026-10-25. Read this before touching code, maps, assets, or tests. `README.MD` and `PROJECT_STRUCTURE.MD` are the current file/stack map; this file adds the rules that let several agents work at the same time without corrupting each other's work.
+Last updated: 2026-10-27. Read this before touching code, maps, assets, or tests. `README.MD` and `PROJECT_STRUCTURE.MD` are the current file/stack map; this file adds the rules that let several agents work at the same time without corrupting each other's work.
 
 ## 0. Current stack (the old ANT app is legacy)
 
@@ -12,7 +12,7 @@ Last updated: 2026-10-25. Read this before touching code, maps, assets, or tests
 - Active app shell: `core/src/main/java/ru/fungames/checkers/CheckersGame.java`, `lwjgl3/src/main/java/ru/fungames/checkers/desktop/DesktopLauncher.java`, `android/src/main/java/ru/fungames/checkers/AndroidLauncher.java`.
 - Active runtime data: `assets/config.xml`, `assets/xml/*.xml`, `assets/Images/*`, `assets/Sounds/*`.
 - Legacy paths: root `src/`, `gen/`, `res/`, `bin/`, `build.xml`, `.project`, `.classpath`, `project.properties`. Do not use them for active work; do not "fix" them unless the task is explicitly about the legacy shell.
-- There is no general automated test suite, lint task, or CI. The lock layer has a targeted self-test task (`:core:lockSelfTest`); otherwise verification is compile + smoke run + targeted checks.
+- A headless JUnit suite exists in `core/src/test/java/**` and runs via `:core:test`. `:core:check` runs that suite plus `:core:lockSelfTest`. There is no lint task or remote CI; visual correctness still needs desktop smoke/run checks.
 - All sources are UTF-8 without BOM. Keep the root Gradle `options.encoding = 'UTF-8'`.
 
 ## 1. Parallel-agent contract
@@ -247,19 +247,23 @@ Active commands:
 
 ```powershell
 .\gradlew.bat :core:compileJava
+.\gradlew.bat :core:test
 .\gradlew.bat :core:lockSelfTest
+.\gradlew.bat :core:check
 .\gradlew.bat :lwjgl3:build
 .\gradlew.bat :lwjgl3:run --args="--smoke"
 .\gradlew.bat :lwjgl3:run --args="--smoke --map=binding_test"
 .\gradlew.bat :android:assembleDebug
 ```
 
+- `:core:test` runs the headless engine regression suite. It does not require a GL surface or asset loader; rendering/assets still need smoke/run checks.
+- `:core:check` runs `:core:test` and then `:core:lockSelfTest`; use it when your change can affect engine-wide state.
 - `:core:lockSelfTest` runs the lock-layer scenarios (shared readers, writer rejection/wait, timeout diagnostics, upgrade rejection, lock order, test-scope isolation). It must print `ALL LOCK TESTS PASSED`.
 - `--smoke` renders 180 frames and exits. A clean exit with no exceptions is the current smoke gate.
 - Use `--map=<name>` to load another map under `assets/xml/`.
 - The desktop module uses `assets/` as its working directory.
 - The legacy `ant build` is not the active path. It compiles the old `src/`/`gen/` tree, hardcodes old SDK paths, and uses Java 1.5. Do not rely on it and do not "fix" it unless the task is explicitly about the legacy shell.
-- There is no test suite, lint task, or CI. If you add a test, also add a runnable Gradle task so the next agent can execute it.
+- The test harness rules, current coverage, and characterization quirks are documented in `plans/tests-plan.md`.
 
 Useful log tags: `"core"`, `"Parser"`, `"Physical"`, `"Logical"`, `"Output"`, `"Resources"`, `"Sound"`, `"agents"`, `"framework2d"`.
 
@@ -311,7 +315,7 @@ These are known gaps, not permission to skip the rules above:
 
 1. **Sound and resource integration.** `SoundPlayer.play` and `HandlerSounds.transferData` should take `SOUND` `READ`; `GameResources` cache mutation should take `RESOURCES` `WRITE`, with read leases around lookups. This is currently the sound agent's scope; coordinate before editing those files.
 2. **Cross-process source lock CLI.** `plans/claims/` is an advisory file protocol. A small `tools/agent-lock` command (acquire/release/status/wait, JSON claims, stale detection, read/write modes) would make it enforceable across separate JVMs/processes.
-3. **More lock tests and CI.** `core/src/test/java/ru/framework2d/core/agents/EngineLocksSelfTest.java` is runnable via `:core:lockSelfTest` and covers the main scenarios. Add stress/fairness cases, wire it into `check`/CI, and keep the Gradle task runnable for other agents.
+3. **More lock tests and CI.** `core/src/test/java/ru/framework2d/core/agents/EngineLocksSelfTest.java` is runnable via `:core:lockSelfTest`, is already wired into `:core:check`, and covers the main scenarios. Add stress/fairness cases and remote CI, and keep the Gradle task runnable for other agents.
 4. **Wait-for graph.** The registry rejects lock-order violations, but a cross-agent cycle detector would improve diagnostics. Until then, respect the canonical order and keep hold times short.
 5. **Lock metrics.** Expose contention counts and longest hold times through `EngineLocks.describeAll()` or a smoke flag.
 6. **Optional map metadata.** A map-level `agentScope`/`test` attribute could declare which domains a scenario expects to isolate; not implemented today.
