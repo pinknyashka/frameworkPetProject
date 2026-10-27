@@ -9,6 +9,22 @@ dependencies {
     // (The Android module relies on the platform's built-in org.xmlpull.v1.)
     implementation "xmlpull:xmlpull:1.1.3.1"
     runtimeOnly "xpp3:xpp3_min:1.1.4c"
+
+    testImplementation "junit:junit:4.13.2"
+    // MXParser is needed at test compile time to feed maps into MapParser.
+    testImplementation "xpp3:xpp3_min:1.1.4c"
+}
+
+test {
+    // Static engine state (Engine.*, IntervalPhysics.*, interaction handler registries)
+    // is process-wide: keep the whole suite in one JVM, sequential, with the same guards as the game.
+    useJUnit()
+    maxParallelForks = 1
+    systemProperty 'framework2d.agent', 'junit-tests'
+    testLogging {
+        events 'failed'
+        exceptionFormat 'full'
+    }
 }
 
 tasks.register('lockSelfTest', JavaExec) {
@@ -17,3 +33,7 @@ tasks.register('lockSelfTest', JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'ru.framework2d.core.agents.EngineLocksSelfTest'
 }
+
+// Both halves of the verification have to pass: the JUnit suite (already wired into `check`
+// by the java plugin) and the lock layer self-test.
+tasks.named('check') { dependsOn tasks.named('lockSelfTest') }
