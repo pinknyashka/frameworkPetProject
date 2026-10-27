@@ -129,7 +129,7 @@ Compatibility package replacing Android API classes used by the original engine.
 | `DataImplementator.java` | Static evaluator turning XML attribute strings into typed `DataInterface` values, or arithmetic/comparison/boolean results. |
 | `Expression.java` | Runtime expression engine resolving `$object.component.data` references through the live entity model. |
 | `ExpressionCalculator.java` | Static parse-time calculator for pure numeric attribute expressions. |
-| `GameResources.java` | Migrated libGDX resource loader. Reads internal `config.xml`, internal `xml/<name>.xml` maps, internal `Images/<name>.png` images, optional external `sPart/...` overrides, and creates placeholder/fallback textures. Still caches sprites by name only. |
+| `GameResources.java` | Migrated libGDX resource loader. Reads internal `config.xml`, internal `xml/<name>.xml` maps, internal `Images/<name>.png` images, internal `Sounds/<name>.ogg|wav` sounds, optional external `sPart/...` overrides, and creates placeholder/fallback textures. Still caches sprites by name only. |
 
 Removed from the active core module:
 
@@ -252,14 +252,14 @@ These advanced drawing features currently rely on libGDX-backed approximations a
 |---|---|
 | `HandlerShapesCollisions.java` | Shape collision handler; pairwise collision resolution and impulses. |
 | `InteractionShapes.java` | Base shape-pair collision response. **Russian comments (UTF-8).** |
-| `PhysicalShape.java` | Abstract collision shape; AABB, static flag, contact points, impulse. |
+| `PhysicalShape.java` | Abstract collision shape; AABB, static flag, contact points, impulse, and `collisionSpeed` for the last collision. |
 
 #### `physics/collisions/circles/`
 
 | File | Description |
 |---|---|
 | `PhysicalCircle.java` | Circle shape (`circle`). |
-| `InteractionCircles.java` | Circle-circle collision handler. **Russian comments (UTF-8).** |
+| `InteractionCircles.java` | Circle-circle collision handler; publishes relative collision speed for listeners such as sound volume. **Russian comments (UTF-8).** |
 
 #### `physics/collisions/blocks/`
 
@@ -393,7 +393,14 @@ These advanced drawing features currently rely on libGDX-backed approximations a
 
 ### `core/src/main/java/ru/framework2d/sound/`
 
-Currently empty. The package exists but the project does not currently contain sound-effect code or assets beyond the planned/migration boundary.
+| File | Description |
+|---|---|
+| `DirectSound.java` | Sound engine node for maps. |
+| `HandlerSounds.java` | Plays collision-triggered audio and scales volume by `PhysicalShape.collisionSpeed`. |
+| `AudioComponent.java` | `audio` component; defines `sound`, `volume`, `fullVolumeSpeed`, and `minVolume`. |
+| `SoundPlayer.java` | Playback helper backed by `GameResources.getSound(...)` and libGDX `Sound`. |
+
+`assets/xml/sound_test.xml` is a smoke map for collision sound and volume-ramp verification: `--smoke --map=sound_test`.
 
 ## `lwjgl3/` — desktop module
 
@@ -459,6 +466,7 @@ Runtime config consumed by migrated `GameResources`. Defines Maps/Images/Sounds 
 |---|---|
 | `checkers_tree.xml` | Currently the default active runtime map. Uses the current engine-tag schema: `<direct package="..." engineName="...">`, `<handler subpackage="..." engineName="...">`, `<interaction subpackage="..." engineName="...">`, `<sub subpackage="..." engineName="...">`. |
 | `binding_test.xml` | Smoke/verification map for the data-binding feature (`<*_binding` attributes on component data fields); loadable via `--map=binding_test` in the desktop run. |
+| `sound_test.xml` | Smoke/verification map for collision sound and impact-speed volume ramp; loadable via `--map=sound_test` in the desktop run. |
 | `battle_checkers.xml` | Legacy/preview map kept for compatibility and reference. Uses an older engine-tag style (`name = "physical"`, etc.) that does not currently match `EnginesManager.connectEngine`'s reflective schema. Not loaded by the current bridge. |
 | `checkers_with_blocks.xml` | Legacy/preview block-phase map kept for compatibility and reference. Uses engine-tag attributes/styles that do not currently match the active runtime bridge's parser expectations. Not loaded by the current bridge. |
 
@@ -482,6 +490,12 @@ Game images copied from old drawable resources so they can be loaded by libGDX `
 | `valid_checker.png` | Valid-move highlight sprite. |
 | `valid_checker_sprite.png` | Valid-move sprite with frame grid. |
 | `whiteblock.png` | Static block barrier texture. |
+
+### `assets/Sounds/`
+
+| File | Description |
+|---|---|
+| `bump.ogg` | Collision bump sound used by `checkers_tree` and `sound_test`. |
 
 ## Legacy Eclipse/ANT remnants
 
@@ -508,6 +522,6 @@ These files are retained during migration but are not used by the Gradle modules
 - **Advanced drawing is approximate.** `Canvas`, `Paint`, `GradientDrawable`, `LightingColorFilter`, `Path`, and clipping/shadow/relief behavior are currently compatibility approximations backed by libGDX.
 - **The active runtime map is `checkers_tree`.** The current bridge does not yet reproduce the old `MainActivity` map picker.
 - **Other maps remain present as legacy data.** They may require map-schema updates before they can be loaded by the current engine reflection path.
-- **Sound is intentionally not added yet.** The `sound` package is empty; sound-effect work is a later change after migration.
+- **Sound is active.** The `sound` package contains the collision-triggered playback path; collision volume is scaled by `PhysicalShape.collisionSpeed`.
 - **Keep files UTF-8 (no BOM).** The root Gradle build compiles with `UTF-8`; the legacy cp1251 engine comments and `changelog.txt` have been re-encoded.
 - **No tests/lint/CI.** Verification is compile + desktop smoke + APK assembly + on-device run.

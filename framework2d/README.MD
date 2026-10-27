@@ -40,6 +40,7 @@ android/AndroidManifest.xml Active Android manifest
 assets/config.xml         Engine runtime config
 assets/xml/*.xml          Game maps
 assets/Images/*.png       Game images loaded by the migrated resource loader
+assets/Sounds/*.{ogg,wav} Game sounds loaded by the migrated resource loader
 
 src/                      Legacy Eclipse-era Java shell (MainActivity/PlayGround); not used by Gradle
 gen/                      Legacy aapt-generated sources; not used by Gradle
@@ -122,6 +123,7 @@ The migrated `GameResources` loader uses libGDX `FileHandle`s:
 - Config: internal `config.xml`.
 - Maps: internal `xml/<name>.xml`.
 - Images: internal `Images/<name>.png`, then internal root `<name>.png`.
+- Sounds: internal `Sounds/<name>.ogg` or `Sounds/<name>.wav`.
 - Optional external overrides under `sPart/...` when the runtime/storage supports it.
 - Missing images fall back to `image_not_found.png`, or to a 1×1 placeholder texture if even that cannot be loaded.
 
@@ -156,7 +158,14 @@ There is no automated test suite, lint task, or CI configured.
 
 ## Sound
 
-The `core/src/main/java/ru/framework2d/sound/` package exists but is currently empty. The project does not currently contain sound-effect implementation. Sound work is intentionally out of scope for the migration pass.
+The `core/src/main/java/ru/framework2d/sound/` package contains the active sound subsystem:
+
+- `DirectSound` — the sound engine node used from map files.
+- `HandlerSounds` — plays collision-triggered audio.
+- `AudioComponent` — the `audio` component; defines `sound`, `volume`, `fullVolumeSpeed`, and `minVolume`.
+- `SoundPlayer` — playback helper backed by `GameResources.getSound(...)` and libGDX `Sound`.
+
+Collision audio is triggered through `PhysicalShape.collision` and scaled by `PhysicalShape.collisionSpeed`: faster relative impact speed plays louder, down to `minVolume` for slow hits. `assets/xml/sound_test.xml` is a smoke map for verifying this behavior with `--smoke --map=sound_test`.
 
 ## Gotchas
 
