@@ -2,7 +2,7 @@
 <map version = "1.0" name = "shadow shape test" parallel = "false">
 
     <direct package = "ru.framework2d.graphics.render" engineName = "OutputRenderHQ"
-        quality = "high" shadowBufferScale = "0.5" shadows = "true">
+        quality = "high" shadowBufferScale = "1.0" shadowSharp = "true" shadows = "true">
 
         <handler engineName = "HandlerRenderHQ">
             <sub subpackage = "camera" engineName = "CameraRenderSystem"/>
@@ -53,7 +53,7 @@
             position:x = "-30" position:y = "0"/>
         <shadow
             position:x = "-30" position:y = "0" position:z = "0"
-            layer = "1.9" opacity = "0.6" softness = "2.0"
+            layer = "1.9" opacity = "0.6" softness = "0.0"
             geometry:type = "v_cylinder" geometry:radius = "4" geometry:height = "2"/>
         <text
             position:x = "-30" position:y = "10"
@@ -67,7 +67,7 @@
             position:x = "-10" position:y = "0"/>
         <shadow
             position:x = "-10" position:y = "0" position:z = "0"
-            layer = "1.9" opacity = "0.6" softness = "2.0"
+            layer = "1.9" opacity = "0.6" softness = "0.0"
             geometry:type = "v_cylinder" geometry:radius = "4" geometry:height = "8"/>
         <text
             position:x = "-10" position:y = "10"
@@ -81,7 +81,7 @@
             position:x = "10" position:y = "0"/>
         <shadow
             position:x = "10" position:y = "0" position:z = "0"
-            layer = "1.9" opacity = "0.6" softness = "2.0"
+            layer = "1.9" opacity = "0.6" softness = "0.0"
             geometry:type = "v_cylinder" geometry:radius = "6" geometry:height = "4"/>
         <text
             position:x = "10" position:y = "10"
@@ -95,7 +95,7 @@
             position:x = "30" position:y = "0"/>
         <shadow
             position:x = "30" position:y = "0" position:z = "0"
-            layer = "1.9" opacity = "0.6" softness = "2.0"
+            layer = "1.9" opacity = "0.6" softness = "0.0"
             geometry:type = "block" geometry:width = "8" geometry:depth = "4" geometry:height = "6"/>
         <text
             position:x = "30" position:y = "10"

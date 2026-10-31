@@ -39,8 +39,9 @@ public class OutputRenderHQ extends Engine implements GraphicalPeriphery, Render
     private long lastLockWarning;
     private HandlerRenderHQ handler;
 
-    private float shadowBufferScale = 0.5f;
+    private float shadowBufferScale = 1.0f;
     private boolean shadowsEnabled = true;
+    private boolean shadowSharp = true;
 
     @Override
     public void setOptions(TagOptions options) {
@@ -52,6 +53,10 @@ public class OutputRenderHQ extends Engine implements GraphicalPeriphery, Render
                 } catch (NumberFormatException e) {
                     Log.w(LOG_TAG, "Invalid shadowBufferScale: " + property.data);
                 }
+            } else if (property.isNamed("shadowSharp")) {
+                shadowSharp = Boolean.parseBoolean(property.data.toString());
+            } else if (property.isNamed("softShadows")) {
+                shadowSharp = !Boolean.parseBoolean(property.data.toString());
             } else if (property.isNamed("shadows")) {
                 shadowsEnabled = Boolean.parseBoolean(property.data.toString());
             } else if (property.isNamed("quality")) {
@@ -60,7 +65,7 @@ public class OutputRenderHQ extends Engine implements GraphicalPeriphery, Render
                 }
             }
         }
-        services.configure(shadowBufferScale, shadowsEnabled);
+        services.configure(shadowBufferScale, shadowsEnabled, shadowSharp);
     }
 
     @Override

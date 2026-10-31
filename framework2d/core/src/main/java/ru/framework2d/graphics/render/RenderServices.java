@@ -49,8 +49,10 @@ public class RenderServices {
 
     private int width = 1;
     private int height = 1;
-    private float shadowScale = 0.5f;
+    private float shadowScale = 1.0f;
     private boolean shadowsEnabled = true;
+    private boolean shadowSharp = true;
+    private boolean framebufferSharp = true;
     private boolean initialized;
     private boolean shadersFailed;
 
@@ -62,11 +64,23 @@ public class RenderServices {
     private final float[] lightColors = new float[12];
     private final float[] lightParams = new float[12];
 
-    public void configure(float shadowBufferScale, boolean enableShadows) {
+    public void configure(float shadowBufferScale, boolean enableShadows, boolean sharpShadows) {
+        float nextScale = shadowScale;
         if (shadowBufferScale > 0.1f && shadowBufferScale <= 2.0f) {
-            shadowScale = shadowBufferScale;
+            nextScale = shadowBufferScale;
         }
+        if (sharpShadows && nextScale < 1.0f) {
+            nextScale = 1.0f;
+        }
+
+        shadowScale = nextScale;
         shadowsEnabled = enableShadows;
+        shadowSharp = sharpShadows;
+        createFramebuffers();
+    }
+
+    public boolean shadowSharp() {
+        return shadowSharp;
     }
 
     public Matrix4 baseProjection() {
@@ -104,7 +118,7 @@ public class RenderServices {
         emptyTexture.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
         pixel.dispose();
 
-        shadowMesh = new Mesh(false, 8192, 0, VertexAttribute.Position());
+        shadowMesh = new Mesh(false, 32768, 0, VertexAttribute.Position());
         fullscreenMesh = new Mesh(false, 4, 6, VertexAttribute.Position(), VertexAttribute.TexCoords(0));
         fullscreenMesh.setVertices(new float[] {
                 -1, -1, 0, 0, 0,
@@ -151,7 +165,10 @@ public class RenderServices {
         int newWidth = Math.max(1, (int) (width * shadowScale));
         int newHeight = Math.max(1, (int) (height * shadowScale));
 
-        if (shadowMask != null && shadowMask.getWidth() == newWidth && shadowMask.getHeight() == newHeight) {
+        if (shadowMask != null
+                && shadowMask.getWidth() == newWidth
+                && shadowMask.getHeight() == newHeight
+                && framebufferSharp == shadowSharp) {
             return;
         }
 
@@ -165,7 +182,33 @@ public class RenderServices {
         }
 
         shadowMask = new FrameBuffer(Pixmap.Format.RGBA8888, newWidth, newHeight, false);
-        shadowBlur = new FrameBuffer(Pixmap.Format.RGBA8888, newWidth, newHeight, false);
+        applyShadowTextureFilter(shadowMask.getColorBufferTexture());
+
+        if (!shadowSharp) {
+            shadowBlur = new FrameBuffer(Pixmap.Format.RGBA8888, newWidth, newHeight, false);
+            Texture blurTexture = shadowBlur.getColorBufferTexture();
+            if (blurTexture != null) {
+                blurTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+            }
+        }
+
+        framebufferSharp = shadowSharp;
+    }
+
+    private void applyShadowTextureFilter(Texture texture) {
+        if (texture == null) {
+            return;
+        }
+
+        if (shadowSharp) {
+            if (shadowScale > 1.001f) {
+                texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Nearest);
+            } else {
+                texture.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+            }
+        } else {
+            texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        }
     }
 
     public void beginScene(RenderFrame frame) {
@@ -341,16 +384,23 @@ public class RenderServices {
         shadowMask.end();
         Gdx.gl.glEnable(GL20.GL_BLEND);
 
-        if (blurShader == null || shadowBlur == null) {
+        float radius = effectiveBlurRadius(softness, shadowSharp);
+        if (radius <= 0.0f || blurShader == null || shadowBlur == null) {
             return;
         }
 
-        float radius = Math.max(1.0f, softness);
         float offsetX = radius / Math.max(1, shadowMask.getWidth());
         float offsetY = radius / Math.max(1, shadowMask.getHeight());
 
         renderBlur(shadowMask.getColorBufferTexture(), shadowBlur, offsetX, 0);
         renderBlur(shadowBlur.getColorBufferTexture(), shadowMask, 0, offsetY);
+    }
+
+    static float effectiveBlurRadius(float softness, boolean sharpShadows) {
+        if (sharpShadows || softness <= 0.0f || Float.isNaN(softness)) {
+            return 0.0f;
+        }
+        return softness;
     }
 
     private void renderBlur(Texture source, FrameBuffer target, float offsetX, float offsetY) {
@@ -373,7 +423,9 @@ public class RenderServices {
         if (shadowMask == null) {
             return null;
         }
-        return shadowMask.getColorBufferTexture();
+        Texture texture = shadowMask.getColorBufferTexture();
+        applyShadowTextureFilter(texture);
+        return texture;
     }
 
     public void configure(Texture texture) {

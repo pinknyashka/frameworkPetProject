@@ -50,7 +50,7 @@
     </direct>
     
     <direct package = "ru.framework2d.graphics.render" engineName = "OutputRenderHQ"
-        quality = "high" shadowBufferScale = "0.5" maxLights = "4" shadows = "true">
+        quality = "high" shadowBufferScale = "1.0" shadowSharp = "true" maxLights = "4" shadows = "true">
     	<handler engineName = "HandlerRenderHQ">
     	    <sub subpackage = "camera" engineName = "CameraRenderSystem"/>
     	    <sub subpackage = "light" engineName = "LightRenderSystem"/>
@@ -246,7 +246,7 @@
  				
  				<!-- graphical components -->
  				
- 				<shadow position:z = "0" layer = "1.9" opacity = "0.6" softness = "2.0"
+ 				<shadow position:z = "0" layer = "1.9" opacity = "0.6" softness = "10.0"
  				    geometry:type = "v_cylinder" geometry:radius = "4" geometry:height = "2" castShadows = "true"/>
  	
  		   		<pict radius = "4" spriteName = "firehead_sprite" layer = "2" position:alpha = "3.14" spriteCollumnsNum = "3"/>
@@ -325,7 +325,7 @@
  				
  				<!-- graphical components -->
  				
- 				<shadow position:z = "0" layer = "1.9" opacity = "0.6" softness = "2.0"
+ 				<shadow position:z = "0" layer = "1.9" opacity = "0.6" softness = "10.0"
  				    geometry:type = "v_cylinder" geometry:radius = "4" geometry:height = "2" castShadows = "true"/>
  	
  				<pict radius = "4" spriteName = "bonehead" layer = "2"/>

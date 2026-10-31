@@ -30,7 +30,7 @@ public class OutputGraphicalShadow extends OutputGraphicalInterface {
 	
 	public Fractional opacity = new Fractional(0.5f);
 	
-	public Fractional length = new Fractional(5.0f);
+    public Fractional length = new Fractional(0.0f);
 	
 	public Bool isStatic = new Bool(false);
 	

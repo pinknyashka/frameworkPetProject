@@ -63,4 +63,24 @@ public class ShadowProjectionMathTest {
 		assertTrue(hugeDistance <= 300);
 		assertTrue(hugeDistance >= 0);
 	}
+
+	@Test
+	public void projectionMatchesLegacyPointLightHomothety() {
+		float scale = ShadowRenderSystem.projectionScale(50, 0, 2);
+		assertEquals(50.0d / 48.0d, scale, EPS);
+
+		float length = ShadowRenderSystem.shadowLength(0, 0, -60, 0, 50, 0, 2, 0);
+		assertEquals((scale - 1.0d) * 60.0d, length, EPS);
+		assertEquals(scale, ShadowRenderSystem.effectiveStretch(60, length, scale), EPS);
+	}
+
+	@Test
+	public void projectionScaleShrinksAsLightRises() {
+		assertTrue(ShadowRenderSystem.projectionScale(50, 0, 10) > ShadowRenderSystem.projectionScale(100, 0, 10));
+	}
+
+	@Test
+	public void overHeadShadowHasNoHorizontalOffsetWhenMinimumLengthIsZero() {
+		assertEquals(0, ShadowRenderSystem.shadowLength(0, 0, 0, 0, 50, 0, 2, 0), EPS);
+	}
 }

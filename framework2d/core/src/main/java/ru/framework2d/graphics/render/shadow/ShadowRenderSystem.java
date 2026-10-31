@@ -14,17 +14,24 @@ import ru.framework2d.graphics.render.RenderTransform;
 
 public class ShadowRenderSystem extends RenderSystem {
 
-    private static final int CIRCLE_SEGMENTS = 20;
+    private static final int CIRCLE_SEGMENTS = 32;
     private static final int MAX_POINTS = CIRCLE_SEGMENTS * 2 + 8;
+    private static final int MAX_TRIANGLE_VERTICES = 32768;
+    private static final float POINT_EPSILON = 0.0001f;
 
     private static final float MIN_ELEVATION_RATIO = 1e-3f;
     private static final float MAX_STRETCH = 10.0f;
-    private static final float MAX_SHADOW_LENGTH = 300.0f;
+    private static final float MAX_SHADOW_OFFSET = 300.0f;
+    private static final float DISTANCE_EPSILON = 0.0001f;
 
     private final ArrayList<OutputGraphicalShadow> shadows = new ArrayList<OutputGraphicalShadow>();
     private final RenderTransform transform = new RenderTransform();
 
-    private final float[] vertices = new float[8192 * 3];
+    private float projectedOffsetX;
+    private float projectedOffsetY;
+    private float projectedStretch;
+
+    private final float[] vertices = new float[MAX_TRIANGLE_VERTICES * 3];
     private int vertexFloats;
 
     private final float[] pointsX = new float[MAX_POINTS];
@@ -63,7 +70,7 @@ public class ShadowRenderSystem extends RenderSystem {
         }
 
         vertexFloats = 0;
-        float maxSoftness = 1.0f;
+        float maxSoftness = 0.0f;
         float maxOpacity = 0.0f;
 
         for (int i = 0; i < shadows.size(); i++) {
@@ -105,12 +112,11 @@ public class ShadowRenderSystem extends RenderSystem {
             return;
         }
 
+        computeProjection(light, shadow, height);
+
         pointCount = 0;
         addCircle(transform.x, transform.y, radius);
-
-        float offsetX = shadowOffsetX(light, height, shadow);
-        float offsetY = shadowOffsetY(light, height, shadow);
-        addCircle(transform.x + offsetX, transform.y + offsetY, radius);
+        addCircle(transform.x + projectedOffsetX, transform.y + projectedOffsetY, radius * projectedStretch);
 
         emitHull();
     }
@@ -128,85 +134,109 @@ public class ShadowRenderSystem extends RenderSystem {
         float cos = (float) Math.cos(transform.angle);
         float sin = (float) Math.sin(transform.angle);
 
-        float offsetX = shadowOffsetX(light, height, shadow);
-        float offsetY = shadowOffsetY(light, height, shadow);
+        computeProjection(light, shadow, height);
 
         pointCount = 0;
         for (int i = 0; i < 4; i++) {
             float rx = cos * localX[i] - sin * localY[i];
             float ry = sin * localX[i] + cos * localY[i];
-            addPoint(transform.x + rx, transform.y + ry);
-            addPoint(transform.x + offsetX + rx, transform.y + offsetY + ry);
+            float baseX = transform.x + rx;
+            float baseY = transform.y + ry;
+
+            addPoint(baseX, baseY);
+            addPoint(
+                    light.position.x + projectedStretch * (baseX - light.position.x),
+                    light.position.y + projectedStretch * (baseY - light.position.y));
         }
 
         emitHull();
     }
 
-    private float shadowOffsetX(LightState light, float height, OutputGraphicalShadow shadow) {
-        float offset = shadowLength(light, height, shadow);
-        return awayX(light) * offset;
-    }
+    private void computeProjection(LightState light, OutputGraphicalShadow shadow, float height) {
+        float dx = transform.x - light.position.x;
+        float dy = transform.y - light.position.y;
+        float distance = (float) Math.sqrt(dx * dx + dy * dy);
 
-    private float shadowOffsetY(LightState light, float height, OutputGraphicalShadow shadow) {
-        float offset = shadowLength(light, height, shadow);
-        return awayY(light) * offset;
-    }
+        float physicalStretch = projectionScale(light.position.z, transform.z, height);
+        float offset = shadowOffset(distance, physicalStretch, shadow.length.value);
 
-    private float awayX(LightState light) {
-        return awayX(transform.x, transform.y, light.position.x, light.position.y);
-    }
-
-    private float awayY(LightState light) {
-        return awayY(transform.x, transform.y, light.position.x, light.position.y);
-    }
-
-    private float shadowLength(LightState light, float height, OutputGraphicalShadow shadow) {
-        return shadowLength(transform.x, transform.y, light.position.x, light.position.y,
-                light.position.z, height, shadow.length.value);
+        projectedStretch = effectiveStretch(distance, offset, physicalStretch);
+        if (distance > DISTANCE_EPSILON) {
+            projectedOffsetX = dx / distance * offset;
+            projectedOffsetY = dy / distance * offset;
+        } else {
+            projectedOffsetX = 0.0f;
+            projectedOffsetY = 0.0f;
+        }
     }
 
     static float awayX(float casterX, float casterY, float lightX, float lightY) {
         float dx = casterX - lightX;
         float dy = casterY - lightY;
         float distance = (float) Math.sqrt(dx * dx + dy * dy);
-        return distance > 0.0001f ? dx / distance : 0.0f;
+        return distance > DISTANCE_EPSILON ? dx / distance : 0.0f;
     }
 
     static float awayY(float casterX, float casterY, float lightX, float lightY) {
         float dx = casterX - lightX;
         float dy = casterY - lightY;
         float distance = (float) Math.sqrt(dx * dx + dy * dy);
-        return distance > 0.0001f ? dy / distance : 0.0f;
+        return distance > DISTANCE_EPSILON ? dy / distance : 0.0f;
     }
 
     static float shadowLength(float casterX, float casterY, float lightX, float lightY,
             float lightZ, float height, float minLength) {
+        return shadowLength(casterX, casterY, lightX, lightY, lightZ, 0.0f, height, minLength);
+    }
+
+    static float shadowLength(float casterX, float casterY, float lightX, float lightY,
+            float lightZ, float baseZ, float height, float minLength) {
         float dx = casterX - lightX;
         float dy = casterY - lightY;
         float distance = (float) Math.sqrt(dx * dx + dy * dy);
+        float physicalStretch = projectionScale(lightZ, baseZ, height);
+        return shadowOffset(distance, physicalStretch, minLength);
+    }
 
-        float elevation = lightZ - height;
-        float stretch;
-        if (elevation > MIN_ELEVATION_RATIO) {
-            stretch = lightZ / elevation;
-            if (stretch > MAX_STRETCH) {
-                stretch = MAX_STRETCH;
-            }
-            if (stretch < 1.0f) {
-                stretch = 1.0f;
-            }
-        } else {
+    static float projectionScale(float lightZ, float baseZ, float height) {
+        float lightHeight = lightZ - baseZ;
+        float elevation = lightHeight - height;
+        if (lightHeight <= DISTANCE_EPSILON || elevation <= MIN_ELEVATION_RATIO) {
+            return MAX_STRETCH;
+        }
+
+        float stretch = lightHeight / elevation;
+        if (stretch < 1.0f) {
+            stretch = 1.0f;
+        } else if (stretch > MAX_STRETCH) {
             stretch = MAX_STRETCH;
         }
+        return stretch;
+    }
 
-        float length = (stretch - 1.0f) * distance;
-        if (length < minLength) {
-            length = minLength;
+    static float shadowOffset(float distance, float physicalStretch, float minLength) {
+        float offset = (physicalStretch - 1.0f) * distance;
+        if (offset < minLength) {
+            offset = minLength;
         }
-        if (length > MAX_SHADOW_LENGTH) {
-            length = MAX_SHADOW_LENGTH;
+        if (offset > MAX_SHADOW_OFFSET) {
+            offset = MAX_SHADOW_OFFSET;
         }
-        return length;
+        return Math.max(0.0f, offset);
+    }
+
+    static float effectiveStretch(float distance, float offset, float physicalStretch) {
+        if (distance > DISTANCE_EPSILON) {
+            float effective = 1.0f + offset / distance;
+            if (effective < 1.0f) {
+                return 1.0f;
+            }
+            if (effective > MAX_STRETCH) {
+                return MAX_STRETCH;
+            }
+            return effective;
+        }
+        return Math.max(1.0f, physicalStretch);
     }
 
     private void addCircle(float centerX, float centerY, float radius) {
@@ -271,6 +301,11 @@ public class ShadowRenderSystem extends RenderSystem {
     }
 
     private void addPoint(float x, float y) {
+        for (int i = 0; i < pointCount; i++) {
+            if (Math.abs(pointsX[i] - x) < POINT_EPSILON && Math.abs(pointsY[i] - y) < POINT_EPSILON) {
+                return;
+            }
+        }
         if (pointCount >= pointsX.length) {
             return;
         }
