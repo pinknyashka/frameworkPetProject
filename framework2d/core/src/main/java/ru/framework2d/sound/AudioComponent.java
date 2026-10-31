@@ -3,6 +3,7 @@ package ru.framework2d.sound;
 import ru.framework2d.core.Component;
 
 import ru.framework2d.data.Fractional;
+import ru.framework2d.data.Numeral;
 import ru.framework2d.data.Text;
 import ru.framework2d.data.Trigger;
 
@@ -31,6 +32,12 @@ public class AudioComponent extends Component {
 
 	//volume factor (0..1) of the slowest collision
 	public Fractional minVolume = new Fractional(0.15f);
+
+	//maximum number of collision sounds started by this component inside parallelWindow
+	public Numeral parallelSounds = new Numeral(1);
+
+	//collision window in milliseconds used by parallelSounds; 0 disables the window
+	public Numeral parallelWindow = new Numeral(50);
 
 	@Override
 	public String getShortClassName() {

@@ -1,5 +1,7 @@
 package ru.framework2d.sound;
 
+import java.util.IdentityHashMap;
+import java.util.Map;
 import java.util.Random;
 
 import ru.framework2d.core.Component;
@@ -16,8 +18,11 @@ import ru.framework2d.compat.Log;
 public class HandlerSounds extends ComponentsHandler {
 
 	private static final String LOG_TAG = "Sound";
+	private static final int MAX_PARALLEL_SOUNDS = 3;
+	private static final long MILLIS_NS = 1_000_000L;
 
 	private Random random = new Random();
+	private final Map<AudioComponent, ParallelSoundState> parallelStates = new IdentityHashMap<AudioComponent, ParallelSoundState>();
 
 	public HandlerSounds() {
 
@@ -63,8 +68,27 @@ public class HandlerSounds extends ComponentsHandler {
 						}
 					}
 
+					long now = System.nanoTime();
+					ParallelSoundState state = parallelStates.get(audio);
+					if (state == null) {
+						state = new ParallelSoundState();
+						parallelStates.put(audio, state);
+					}
+
+					if (isDuplicateDelivery(state, data)) {
+						return true;
+					}
+
+					int limit = clampParallel(audio.parallelSounds.value);
+					if (!allowPlayback(state, now, limit, audio.parallelWindow.value)) {
+						return true;
+					}
+
 					String soundName = pickSound(audio);
-					SoundPlayer.play(soundName, volume);
+					long soundId = SoundPlayer.play(soundName, volume);
+					if (soundId >= 0) {
+						registerPlayback(state, now);
+					}
 
 					Log.d(LOG_TAG, name + ": " + object.name + " reacts to <" + signalContext.name + "> -> play " + soundName + " vol " + volume + ";");
 					return true;
@@ -108,6 +132,63 @@ public class HandlerSounds extends ComponentsHandler {
 		}
 
 		return first;
+	}
+
+	private boolean isDuplicateDelivery(ParallelSoundState state, DataInterface data) {
+		if (state.lastData != data) {
+			state.lastData = data;
+			state.pendingDuplicates = 0;
+		}
+
+		if (state.pendingDuplicates > 0) {
+			state.pendingDuplicates--;
+			return true;
+		}
+
+		int links = 0;
+		for (ComponentsHandler linked : data.lstLinkedHandlers) {
+			if (linked == this) links++;
+		}
+
+		if (links > 1) {
+			state.pendingDuplicates = links - 1;
+		}
+
+		return false;
+	}
+
+	private int clampParallel(int limit) {
+		if (limit <= 0) return 0;
+		if (limit > MAX_PARALLEL_SOUNDS) return MAX_PARALLEL_SOUNDS;
+		return limit;
+	}
+
+	private boolean allowPlayback(ParallelSoundState state, long now, int limit, int windowMs) {
+		if (limit <= 0) return false;
+		if (windowMs <= 0) return true;
+
+		long windowNs = (long) windowMs * MILLIS_NS;
+		int kept = 0;
+		for (int i = 0; i < state.count; i++) {
+			if (now - state.started[i] < windowNs) {
+				state.started[kept++] = state.started[i];
+			}
+		}
+		state.count = kept;
+		return state.count < limit;
+	}
+
+	private void registerPlayback(ParallelSoundState state, long now) {
+		if (state.count < state.started.length) {
+			state.started[state.count++] = now;
+		}
+	}
+
+	private static final class ParallelSoundState {
+		private DataInterface lastData;
+		private int pendingDuplicates;
+		private final long[] started = new long[MAX_PARALLEL_SOUNDS];
+		private int count;
 	}
 
 	void setRandom(Random random) {

@@ -40,10 +40,9 @@ import ru.framework2d.physics.medium.PhysicalMedium;
  * {@code Sound} it hands out is a recording {@link Proxy}. No audio device, no
  * {@code Gdx.files}, no {@code Gdx.audio}, no asset from {@code assets/Sounds}.</p>
  *
- * <p>{@link SoundPlayer} also keeps a process-wide throttle
- * ({@code MIN_REPEAT_INTERVAL_MS} / {@code lastPlayedAt}), so every test must reset
- * or arm it explicitly through {@link #resetPlayThrottle()} /
- * {@link #armPlayThrottle(long)} instead of sleeping.</p>
+ * <p>{@link SoundPlayer} is deliberately passive: rapid-playback limits are owned by
+ * {@link HandlerSounds} per component, so tests configure {@code parallelSounds} and
+ * {@code parallelWindow} directly.</p>
  */
 public final class SoundTestSupport {
 
@@ -181,44 +180,6 @@ public final class SoundTestSupport {
 					});
 		}
 		return recorder.proxy;
-	}
-
-	// ------------------------------------------------------- the play throttle
-
-	private static Field throttleField() throws NoSuchFieldException {
-		Field field = SoundPlayer.class.getDeclaredField("lastPlayedAt");
-		field.setAccessible(true);
-		return field;
-	}
-
-	/** Clears the global repeat window of {@link SoundPlayer}; call it in @Before. */
-	public static void resetPlayThrottle() {
-		try {
-			throttleField().setLong(null, 0L);
-		} catch (ReflectiveOperationException e) {
-			throw new IllegalStateException("cannot reset the SoundPlayer throttle", e);
-		}
-	}
-
-	/**
-	 * Arms the throttle as if a sound had been played {@code millisAgo} milliseconds
-	 * ago, which makes the 120 ms repeat window testable without sleeping.
-	 */
-	public static void armPlayThrottle(long millisAgo) {
-		try {
-			throttleField().setLong(null, System.currentTimeMillis() - millisAgo);
-		} catch (ReflectiveOperationException e) {
-			throw new IllegalStateException("cannot arm the SoundPlayer throttle", e);
-		}
-	}
-
-	/** The current value of the private repeat-window timestamp. */
-	public static long readPlayThrottle() {
-		try {
-			return throttleField().getLong(null);
-		} catch (ReflectiveOperationException e) {
-			throw new IllegalStateException("cannot read the SoundPlayer throttle", e);
-		}
 	}
 
 	// ------------------------------------------------------- component fixtures

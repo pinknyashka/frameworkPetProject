@@ -34,11 +34,12 @@ public class HandlerSoundsTransferTest {
 		TestSupport.bootstrapEngine();
 		TestSupport.resetIntervalPhysics();
 		TestSupport.resetPhysicsRegistries();
-		SoundTestSupport.resetPlayThrottle();
 		recorder = SoundTestSupport.attachRecordingResources();
 		handler = new HandlerSounds();
 		disc = SoundTestSupport.entity("disc");
 		audio = SoundTestSupport.audio(handler, disc);
+		audio.parallelSounds.value = 3;
+		audio.parallelWindow.value = 0;
 	}
 
 	@After
@@ -47,13 +48,11 @@ public class HandlerSoundsTransferTest {
 		recorder = null;
 		shape = null;
 		TestSupport.resetPhysicsRegistries();
-		SoundTestSupport.resetPlayThrottle();
 		TestSupport.bootstrapEngine();
 	}
 
 	/** One signal straight into the handler; returns the volume that reached the device. */
 	private float play(Trigger signal) {
-		SoundTestSupport.resetPlayThrottle();
 		assertTrue(handler.transferData(disc, signal));
 		return recorder.lastVolume();
 	}
@@ -134,7 +133,6 @@ public class HandlerSoundsTransferTest {
 		audio.sounds.value = "a, b ,, c";
 		audio.playback.value = "random";
 
-		SoundTestSupport.resetPlayThrottle();
 		assertTrue(handler.transferData(disc, SoundTestSupport.collisionSignal(audio)));
 
 		assertEquals("c", recorder.lastSound());
@@ -147,7 +145,6 @@ public class HandlerSoundsTransferTest {
 		audio.sounds.value = " , ";
 		audio.playback.value = "random";
 
-		SoundTestSupport.resetPlayThrottle();
 		assertTrue(handler.transferData(disc, SoundTestSupport.collisionSignal(audio)));
 
 		assertEquals("bump", recorder.lastSound());
@@ -160,10 +157,60 @@ public class HandlerSoundsTransferTest {
 		audio.sounds.value = "a,b";
 		audio.playback.value = "single";
 
-		SoundTestSupport.resetPlayThrottle();
 		assertTrue(handler.transferData(disc, SoundTestSupport.collisionSignal(audio)));
 
 		assertEquals("bump", recorder.lastSound());
+	}
+
+	@Test
+	public void parallelPlaybackPlaysUpToTheConfiguredLimitInsideTheWindow() {
+		audio.parallelSounds.value = 3;
+		audio.parallelWindow.value = 1000;
+
+		for (int i = 0; i < 3; i++) {
+			assertTrue(handler.transferData(disc, SoundTestSupport.collisionSignal(audio)));
+		}
+
+		assertEquals(3, recorder.played.size());
+
+		assertTrue(handler.transferData(disc, SoundTestSupport.collisionSignal(audio)));
+
+		assertEquals(3, recorder.played.size());
+	}
+
+	@Test
+	public void parallelPlaybackClampsTheRequestedLimitToThreeSounds() {
+		audio.parallelSounds.value = 9;
+		audio.parallelWindow.value = 1000;
+
+		for (int i = 0; i < 4; i++) {
+			assertTrue(handler.transferData(disc, SoundTestSupport.collisionSignal(audio)));
+		}
+
+		assertEquals(3, recorder.played.size());
+	}
+
+	@Test
+	public void parallelPlaybackWithZeroWindowDoesNotThrottleCollisions() {
+		audio.parallelSounds.value = 3;
+		audio.parallelWindow.value = 0;
+
+		for (int i = 0; i < 4; i++) {
+			assertTrue(handler.transferData(disc, SoundTestSupport.collisionSignal(audio)));
+		}
+
+		assertEquals(4, recorder.played.size());
+	}
+
+	@Test
+	public void parallelPlaybackLimitOneAllowsOnlyOneCollisionInsideTheWindow() {
+		audio.parallelSounds.value = 1;
+		audio.parallelWindow.value = 1000;
+
+		assertTrue(handler.transferData(disc, SoundTestSupport.collisionSignal(audio)));
+		assertTrue(handler.transferData(disc, SoundTestSupport.collisionSignal(audio)));
+
+		assertEquals(1, recorder.played.size());
 	}
 
 	@Test
@@ -250,8 +297,8 @@ public class HandlerSoundsTransferTest {
 	@Test
 	public void pins_aCollisionCommitPlaysOnceEvenThoughTheHandlerIsSubscribedTwice() {
 		// setContextToComponent (ComponentsHandler.java:357-363) and connectComponent (:215-219)
-		// both link the handler, so one commit answers transferData twice; only the
-		// MIN_REPEAT_INTERVAL_MS window (SoundPlayer.java:22-25) hides the second sound
+		// both link the handler, so one commit answers transferData twice; HandlerSounds
+		// hides the second immediate delivery of the same data object as a duplicate commit
 		audio.collision.commit(null, disc);
 
 		assertEquals(1, recorder.played.size());
@@ -260,10 +307,37 @@ public class HandlerSoundsTransferTest {
 	}
 
 	@Test
+	public void aDoublyLinkedCollisionCommitStillPlaysTheNextCommit() {
+		audio.parallelSounds.value = 3;
+		audio.parallelWindow.value = 0;
+
+		audio.collision.commit(null, disc);
+		assertEquals(1, recorder.played.size());
+
+		audio.collision.commit(null, disc);
+		assertEquals(2, recorder.played.size());
+		assertEquals(2, recorder.requested.size());
+		assertEquals(2, SoundTestSupport.subscriptions(audio.collision, handler));
+	}
+
+	@Test
+	public void aSingleLinkedSignalCanDeliverTheSameDataObjectTwice() {
+		audio.parallelSounds.value = 3;
+		audio.parallelWindow.value = 0;
+
+		Trigger signal = SoundTestSupport.collisionSignal(audio);
+
+		assertTrue(handler.transferData(disc, signal));
+		assertTrue(handler.transferData(disc, signal));
+
+		assertEquals(2, recorder.played.size());
+		assertEquals(2, recorder.requested.size());
+	}
+
+	@Test
 	public void aMissingSoundNameIsSilentlySkippedAndTheSignalIsStillHandled() {
 		((SoundTestSupport.RecordingResources) recorder.resources).resolveSounds = false;
 
-		SoundTestSupport.resetPlayThrottle();
 		assertTrue(handler.transferData(disc, SoundTestSupport.collisionSignal(audio)));
 
 		assertTrue(recorder.played.isEmpty());

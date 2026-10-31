@@ -46,7 +46,6 @@ public class SoundLockContractTest {
 		TestSupport.bootstrapEngine();
 		TestSupport.resetIntervalPhysics();
 		TestSupport.resetPhysicsRegistries();
-		SoundTestSupport.resetPlayThrottle();
 		recorder = SoundTestSupport.attachRecordingResources();
 		handler = new HandlerSounds();
 		disc = SoundTestSupport.entity("disc");
@@ -64,7 +63,6 @@ public class SoundLockContractTest {
 		handler = null;
 		recorder = null;
 		TestSupport.resetPhysicsRegistries();
-		SoundTestSupport.resetPlayThrottle();
 		TestSupport.bootstrapEngine();
 		assertTrue("no SOUND lease may survive a test",
 				EngineLocks.status(EngineResource.SOUND).isFree());

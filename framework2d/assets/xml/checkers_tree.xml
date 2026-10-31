@@ -240,7 +240,7 @@
 		        <!-- physical components -->
 		   		<circle position:alpha = "3.14" radius = "4" weight = "0.1"/>
  				
-					<audio sound = "bump" sounds = "%sbump,H_I4_hit2,H_I5_hit3" playback = "%srandom" volume = "1"/>
+					<audio sound = "bump" sounds = "%sbump,H_I4_hit2,H_I5_hit3" playback = "%srandom" parallelSounds = "3" parallelWindow = "50" volume = "1"/>
 		   		
 				<body roughness = "0.1"/>
 				
@@ -316,7 +316,7 @@
 				    <context name = "contactPoint" value = "pointPosition"/>
 				</circle>
  				
-					<audio sound = "bump" sounds = "%sbump,H_I4_hit2,H_I5_hit3" playback = "%srandom" volume = "1"/>
+					<audio sound = "bump" sounds = "%sbump,H_I4_hit2,H_I5_hit3" playback = "%srandom" parallelSounds = "3" parallelWindow = "50" volume = "1"/>
 				 
 				<body roughness = "0.1"/>
 				

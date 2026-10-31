@@ -401,11 +401,11 @@ These advanced drawing features currently rely on libGDX-backed approximations a
 | File | Description |
 |---|---|
 | `DirectSound.java` | Sound engine node for maps. |
-| `HandlerSounds.java` | Plays collision-triggered audio, scales volume by `PhysicalShape.collisionSpeed`, and picks from `sounds` when `playback` is `random`. |
-| `AudioComponent.java` | `audio` component; defines `sound`, `sounds`, `playback`, `volume`, `fullVolumeSpeed`, and `minVolume`. |
+| `HandlerSounds.java` | Plays collision-triggered audio, scales volume by `PhysicalShape.collisionSpeed`, picks from `sounds` when `playback` is `random`, and limits rapid collisions with `parallelSounds`/`parallelWindow`. |
+| `AudioComponent.java` | `audio` component; defines `sound`, `sounds`, `playback`, `volume`, `fullVolumeSpeed`, `minVolume`, `parallelSounds`, and `parallelWindow`. |
 | `SoundPlayer.java` | Playback helper backed by `GameResources.getSound(...)` and libGDX `Sound`. |
 
-`assets/xml/sound_test.xml` is a smoke map for collision sound, volume-ramp, and random-list verification: `--smoke --map=sound_test`.
+`assets/xml/sound_test.xml` is a smoke map for collision sound, volume-ramp, random-list, and parallel-window verification: `--smoke --map=sound_test`.
 
 ## `lwjgl3/` — desktop module
 
@@ -529,6 +529,6 @@ These files are retained during migration but are not used by the Gradle modules
 - **Advanced drawing is approximate.** `Canvas`, `Paint`, `GradientDrawable`, `LightingColorFilter`, `Path`, and clipping/shadow/relief behavior are currently compatibility approximations backed by libGDX.
 - **The active runtime map is `checkers_tree`.** The current bridge does not yet reproduce the old `MainActivity` map picker.
 - **Other maps remain present as legacy data.** They may require map-schema updates before they can be loaded by the current engine reflection path.
-- **Sound is active.** The `sound` package contains the collision-triggered playback path; collision volume is scaled by `PhysicalShape.collisionSpeed`, and `playback = "random"` selects a name from the comma-separated `sounds` set.
+- **Sound is active.** The `sound` package contains the collision-triggered playback path; collision volume is scaled by `PhysicalShape.collisionSpeed`, `playback = "random"` selects a name from the comma-separated `sounds` set, and `parallelSounds`/`parallelWindow` cap rapid overlapping playbacks per audio component.
 - **Keep files UTF-8 (no BOM).** The root Gradle build compiles with `UTF-8`; the legacy cp1251 engine comments and `changelog.txt` have been re-encoded.
 - **Tests exist, but are not enough for rendering/assets.** `:core:test` runs the headless regression suite and `:core:check` adds `:core:lockSelfTest`; visual/platform correctness still needs desktop smoke, APK assembly, and on-device run.

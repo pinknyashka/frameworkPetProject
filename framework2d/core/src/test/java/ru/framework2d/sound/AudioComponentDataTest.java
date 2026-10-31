@@ -34,7 +34,6 @@ public class AudioComponentDataTest {
 		TestSupport.bootstrapEngine();
 		TestSupport.resetIntervalPhysics();
 		TestSupport.resetPhysicsRegistries();
-		SoundTestSupport.resetPlayThrottle();
 		handler = new HandlerSounds();
 	}
 
@@ -62,6 +61,8 @@ public class AudioComponentDataTest {
 		assertEquals(1.0f, audio.volume.value, 0.0001f);
 		assertEquals(10.0f, audio.fullVolumeSpeed.value, 0.0001f);
 		assertEquals(0.15f, audio.minVolume.value, 0.0001f);
+		assertEquals(1, audio.parallelSounds.value);
+		assertEquals(50, audio.parallelWindow.value);
 		assertNotNull(audio.collision);
 		assertEquals(0, audio.lstData.size());
 	}
@@ -74,7 +75,9 @@ public class AudioComponentDataTest {
 				"playback", SoundTestSupport.textValue("random"),
 				"volume", SoundTestSupport.fractionalValue(0.5f),
 				"fullVolumeSpeed", SoundTestSupport.fractionalValue(4.0f),
-				"minVolume", SoundTestSupport.fractionalValue(0.3f));
+				"minVolume", SoundTestSupport.fractionalValue(0.3f),
+				"parallelSounds", SoundTestSupport.numeralValue(3),
+				"parallelWindow", SoundTestSupport.numeralValue(50));
 
 		assertEquals("click", audio.sound.value);
 		assertEquals("a,b,c", audio.sounds.value);
@@ -82,6 +85,8 @@ public class AudioComponentDataTest {
 		assertEquals(0.5f, audio.volume.value, 0.0001f);
 		assertEquals(4.0f, audio.fullVolumeSpeed.value, 0.0001f);
 		assertEquals(0.3f, audio.minVolume.value, 0.0001f);
+		assertEquals(3, audio.parallelSounds.value);
+		assertEquals(50, audio.parallelWindow.value);
 	}
 
 	@Test
@@ -178,6 +183,8 @@ public class AudioComponentDataTest {
 		prototype.playback.value = "random";
 		prototype.minVolume.value = 0.3f;
 		prototype.fullVolumeSpeed.value = 4.0f;
+		prototype.parallelSounds.value = 2;
+		prototype.parallelWindow.value = 75;
 		Entity copies = SoundTestSupport.entity("copies");
 
 		Component made = prototype.createAutoClone(copies);
@@ -190,7 +197,9 @@ public class AudioComponentDataTest {
 		assertEquals("random", clone.playback.value);
 		assertEquals(0.3f, clone.minVolume.value, 0.0001f);
 		assertEquals(4.0f, clone.fullVolumeSpeed.value, 0.0001f);
-		assertEquals(8, clone.lstData.size());
+		assertEquals(2, clone.parallelSounds.value);
+		assertEquals(75, clone.parallelWindow.value);
+		assertEquals(10, clone.lstData.size());
 		assertEquals("collision", clone.collision.getName());
 		assertSame(prototype.collision.getContext(), clone.collision.getContext());
 		assertFalse(clone.collision == prototype.collision);

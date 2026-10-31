@@ -38,7 +38,6 @@ public class HandlerSoundsRegistrationTest {
 		TestSupport.bootstrapEngine();
 		TestSupport.resetIntervalPhysics();
 		TestSupport.resetPhysicsRegistries();
-		SoundTestSupport.resetPlayThrottle();
 		handler = new HandlerSounds();
 	}
 
@@ -114,7 +113,7 @@ public class HandlerSoundsRegistrationTest {
 		assertNull(detached.entity);
 		assertEquals(1, detached.lstLinkedHandlers.size());
 		assertSame(handler, detached.lstLinkedHandlers.get(0));
-		assertEquals(8, detached.lstData.size());
+		assertEquals(10, detached.lstData.size());
 	}
 
 	@Test
@@ -125,8 +124,8 @@ public class HandlerSoundsRegistrationTest {
 		List<String> names = new ArrayList<String>();
 		for (DataInterface data : first.lstData) names.add(data.getName());
 		Collections.sort(names);
-		assertEquals(Arrays.asList("collision", "fullVolumeSpeed", "minVolume", "playback",
-				"position", "sound", "sounds", "volume"), names);
+		assertEquals(Arrays.asList("collision", "fullVolumeSpeed", "minVolume", "parallelSounds",
+				"parallelWindow", "playback", "position", "sound", "sounds", "volume"), names);
 
 		assertEquals("collision", first.collision.getContext().name);
 		assertEquals("sound", first.sound.getContext().name);
@@ -135,6 +134,8 @@ public class HandlerSoundsRegistrationTest {
 		assertEquals("volume", first.volume.getContext().name);
 		assertEquals("fullVolumeSpeed", first.fullVolumeSpeed.getContext().name);
 		assertEquals("minVolume", first.minVolume.getContext().name);
+		assertEquals("parallelSounds", first.parallelSounds.getContext().name);
+		assertEquals("parallelWindow", first.parallelWindow.getContext().name);
 		assertFalse(first.collision.getContext() == first.volume.getContext());
 		assertSame(first.collision.getContext(), second.collision.getContext());
 	}

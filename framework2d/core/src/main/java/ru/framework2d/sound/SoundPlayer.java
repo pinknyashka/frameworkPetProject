@@ -10,32 +10,27 @@ public final class SoundPlayer {
 
     private static final String LOG_TAG = "Sound";
 
-    private static final long MIN_REPEAT_INTERVAL_MS = 120;
-
-    private static long lastPlayedAt;
+    private static final long NO_PLAYBACK = -1L;
 
     private SoundPlayer() {
     }
 
-    public static void play(String soundName, float volume) {
-
-        long now = System.currentTimeMillis();
-        if (now - lastPlayedAt < MIN_REPEAT_INTERVAL_MS) {
-            return;
-        }
+    public static long play(String soundName, float volume) {
 
         GameResources resources = Engine.getResources();
         if (resources == null) {
-            return;
+            return NO_PLAYBACK;
         }
 
         Sound sound = resources.getSound(soundName);
         if (sound == null) {
-            return;
+            return NO_PLAYBACK;
         }
 
-        lastPlayedAt = now;
-        sound.play(Math.max(0f, Math.min(1f, volume)));
-        Log.d(LOG_TAG, "play " + soundName + ";");
+        long id = sound.play(Math.max(0f, Math.min(1f, volume)));
+        if (id >= 0) {
+            Log.d(LOG_TAG, "play " + soundName + ";");
+        }
+        return id;
     }
 }
