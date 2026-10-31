@@ -1,6 +1,8 @@
 package ru.framework2d.graphics.draw.shadows;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
 import ru.framework2d.core.Component;
 import ru.framework2d.core.ComponentsHandler;
@@ -18,6 +20,7 @@ import ru.framework2d.data.Position3;
 import ru.framework2d.data.Vector2;
 import ru.framework2d.data.Vector3;
 import ru.framework2d.graphics.GraphicalPeriphery;
+import ru.framework2d.graphics.render.RenderTransform;
 
 
 import ru.framework2d.compat.Canvas;
@@ -25,7 +28,6 @@ import ru.framework2d.compat.Color;
 import ru.framework2d.compat.ColorFilter;
 import ru.framework2d.compat.Paint;
 import ru.framework2d.compat.Path;
-import ru.framework2d.compat.Log;
 
 public class SubShadows extends ComponentsHandler {
 	
@@ -104,6 +106,8 @@ public class SubShadows extends ComponentsHandler {
 	private ColorFilter bufferFilter;
 	private OutputGraphicalShadow shadow;
 	
+	private final RenderTransform transform = new RenderTransform();
+	
 	@Override
 	public boolean toHandleComponent(Component reflection) {
 
@@ -118,37 +122,34 @@ public class SubShadows extends ComponentsHandler {
 				
 				shadow = (OutputGraphicalShadow) reflection;
 				
-				//px = shadow.position.getXf(); 		py = shadow.position.getYf();
-				//angle = 0;
-				/*if (shadow.isRotatable.value) {
-					angle += (float) Math.toDegrees(shadow.position.getAlpha());
-				}*/
-				//sx = shadow.size.x.value / 2;		sy = shadow.size.y.value / 2;
-				
-				//px += shadow.localPos.x.value;	py += shadow.localPos.y.value;
-				/*if (shadow.isLocalRotatable.value) {
-					angle += Math.toDegrees(shadow.localPos.getAlpha());
-				}*/
-				
 				savedAlpha = paint.getAlpha();
-					//currentAlpha = (int) ((float) savedAlpha * shadow.transparency.value * shadow.localTransparency.value * (1.0f - light.diffuse.value));
 				currentAlpha = (int) ((float) savedAlpha * (1.0f - light.diffuse.value));
 					
 				if (currentAlpha > 0) {
 					
 					if (currentAlpha != savedAlpha) paint.setAlpha(currentAlpha);
 					
-//					stateCount = canvas.save();
-//					{
-						//canvas.translate(px, py);
-						paint.setColor(Color.BLACK);  //setColor killing setAlpha
+					//The drawing area is built around the light in world coordinates, while the canvas is
+					//already moved to this graphical's position, so the shape must be pulled back by the
+					//accumulated offset of the parent chain. Without it the shadow is drawn twice as far
+					//from the light as its caster is.
+					stateCount = 0;
+					if (transform.compute(shadow)) {
+						stateCount = canvas.save();
+						canvas.translate(-transform.x, -transform.y);
+					}
+
+					paint.setColor(Color.BLACK);  //setColor killing setAlpha
 						paint.setAlpha(currentAlpha);
 						bufferFilter = paint.getColorFilter();
 						paint.setColorFilter(light.diffuseFilter);
 						canvas.drawPath(shadow.drawingArea, paint);
 						paint.setColorFilter(bufferFilter);
-//					}
-//					canvas.restoreToCount(stateCount);
+
+					if (stateCount != 0) {
+						canvas.restoreToCount(stateCount);
+						stateCount = 0;
+					}
 					
 					if (currentAlpha != savedAlpha) paint.setAlpha(savedAlpha);
 					handled = true;
@@ -189,8 +190,6 @@ public class SubShadows extends ComponentsHandler {
 				
 				if (light != null) {
 					computeDrawingArea(shadow);
-					//shadow.position.localCommit(null, shadow, shadow.position);
-					//outputDirect.setWorkState(true);
 				}
 				
 			} 
@@ -214,368 +213,175 @@ public class SubShadows extends ComponentsHandler {
 	private double[] angles = new double[4];
 	private double[] projections = new double[4];
 	private Vector2[] vectors = {new Vector2(), new Vector2(), new Vector2(), new Vector2()};
+
+	private static final int HULL_SEGMENTS = 24;
+	private static final double GEOMETRY_EPSILON = 1.0e-6;
 	
-	private void computeDrawingArea(OutputGraphicalShadow shadow) {
+	void computeDrawingArea(OutputGraphicalShadow shadow) {
+		
+		if (shadow.drawingArea == null || light == null) return;
+		shadow.drawingArea.rewind();
 		
 		if (shadow.geometry instanceof GeometryVerticalCylinder) {
-			cylinder = (GeometryVerticalCylinder) shadow.geometry;
-			topPosition.set(shadow.position.x.value, shadow.position.y.value, shadow.position.z.value + cylinder.height.value);
-			toTop.set(topPosition, light.position);
-			distanceToTop = toTop.length2();
-			fullHeight = Math.abs(toTop.z.value) + cylinder.height.value;
-			shadowRatio = fullHeight / Math.abs(toTop.z.value);
-			toShadow.set(toTop);
-			toShadow.selfMulti(shadowRatio);
-			px = (float) light.position.x.value; py = (float) light.position.y.value;
-			cylinderRadius = cylinder.radius.value;
-			shadowRadius = cylinderRadius * (float) shadowRatio;
-			
-			shadow.drawingArea.rewind();
-			shadow.drawingArea.addCircle(px + (float) toShadow.x.value, py + (float) toShadow.y.value, shadowRadius, Path.Direction.CCW);
-			if (distanceToTop > cylinderRadius) {
-				angle = Math.asin(cylinderRadius / distanceToTop); 
-				((Vector2) toTop).rotate(angle);
-				toTop.restore();
-				toTop.selfMulti(Math.sqrt(distanceToTop * distanceToTop - cylinderRadius * cylinderRadius));
-				shadow.drawingArea.moveTo(px + (float) toTop.x.value, py + (float) toTop.y.value);
-				toTop.selfMulti(shadowRatio);
-				shadow.drawingArea.lineTo(px + (float) toTop.x.value, py + (float) toTop.y.value);
-				
-				((Vector2) toShadow).rotate(-angle);
-				distanceToShadow = ((Vector2) toShadow).restore();
-				toShadow.selfMulti(Math.sqrt(distanceToShadow * distanceToShadow - shadowRadius * shadowRadius));
-				shadow.drawingArea.lineTo(px + (float) toShadow.x.value, py + (float) toShadow.y.value);
-				toShadow.selfMulti(1.0d / shadowRatio);
-				shadow.drawingArea.lineTo(px + (float) toShadow.x.value, py + (float) toShadow.y.value);
-				shadow.drawingArea.close();
-			}
-			
+			computeCylinderDrawingArea(shadow, (GeometryVerticalCylinder) shadow.geometry);
 		} 
 		else if (shadow.geometry instanceof GeometryBlock) {
-			block = (GeometryBlock) shadow.geometry;
-			topPosition.set(shadow.position.x.value, shadow.position.y.value, shadow.position.z.value + block.height.value);
-			toTop.set(topPosition, light.position);
-			fullHeight = Math.abs(toTop.z.value) + block.height.value;
-			shadowRatio = fullHeight / Math.abs(toTop.z.value);
-			toShadow.set(toTop);
-			toShadow.selfMulti(shadowRatio);
-			sizeX = (block.width.value * 0.5f); sizeY = (block.depth.value * 0.5f);
-			vectors[0].set(-sizeX, -sizeY);
-			vectors[1].set(-sizeX, sizeY);
-			vectors[2].set(sizeX, sizeY);
-			vectors[3].set(sizeX, -sizeY);
-			boolean isLightInBlock = false;
-			double angle = shadow.position.getAlpha();
-			double currentLength = 0, shortestLength = 0, longestLength = 0;
-			int shortestNo = 0, longestNo = 0; 
-			for (int i = 0; i < 4; i++) { 
-				vectors[i].rotate(angle);
-				vectors[i].addict(toTop);
-				projections[i] = vectors[i].myProectionOnIdentityVector(toTop);
-				currentLength = vectors[i].length2();
-				if (i == 0) {
-					shortestLength = currentLength;
-					longestLength = currentLength;
-				} 
-				else {
-					if (projections[i] * projections[0] <= 0) {
-						isLightInBlock = true;
-					}
-					if (currentLength < shortestLength) {
-						shortestLength = currentLength; 
-						shortestNo = i;
-					} 
-					else if (currentLength > longestLength) {
-						longestLength = currentLength;
-						longestNo = i;
-					}
-				}
-			}
-			
-			shadow.drawingArea.rewind();
-			
-			if (!isLightInBlock) {
-				double biggestAngle = 0, lowestAngle = 0;
-				int biggestAngleNo = 0, lowestAngleNo = 0;
-				for (int i = 0; i < 4; i++) {
-					angles[i] = vectors[i].computeAngle(toTop);
-					if (angles[i] > biggestAngle) {
-						biggestAngle = angles[i];
-						biggestAngleNo = i;
-					} 
-					if (angles[i] < lowestAngle) {
-						lowestAngle = angles[i];
-						lowestAngleNo = i;
-					}
-				}
-				if (biggestAngleNo > lowestAngleNo) {
-					int tmp = biggestAngleNo;
-					biggestAngleNo = lowestAngleNo;
-					lowestAngleNo = tmp;
-				}
-				
-				if ((lowestAngleNo - biggestAngleNo) % 2 == 1) { //if closest border shadow
-					shadow.drawingArea.moveTo((float) (light.position.x.value + vectors[biggestAngleNo].x.value),
-							(float) (light.position.y.value + vectors[biggestAngleNo].y.value));
-					shadow.drawingArea.lineTo((float) (light.position.x.value + vectors[lowestAngleNo].x.value),
-							(float) (light.position.y.value + vectors[lowestAngleNo].y.value));
-					for (int i = 0; i < 4; i++) {
-						vectors[i].selfMulti(shadowRatio);
-					}
-					shadow.drawingArea.lineTo((float) (light.position.x.value + vectors[lowestAngleNo].x.value),
-							(float) (light.position.y.value + vectors[lowestAngleNo].y.value));
-					int direct = 1;
-					int nextVertexNo = (lowestAngleNo + direct) % 4;
-					if (nextVertexNo == biggestAngleNo) {
-						direct = -1;
-						nextVertexNo = (lowestAngleNo + direct) % 4;
-					}
-					shadow.drawingArea.lineTo((float) (light.position.x.value + vectors[nextVertexNo].x.value),
-							(float) (light.position.y.value + vectors[nextVertexNo].y.value));
-					nextVertexNo = (nextVertexNo + direct) % 4;
-					shadow.drawingArea.lineTo((float) (light.position.x.value + vectors[nextVertexNo].x.value),
-							(float) (light.position.y.value + vectors[nextVertexNo].y.value));
-					nextVertexNo = (nextVertexNo + direct) % 4;
-					shadow.drawingArea.lineTo((float) (light.position.x.value + vectors[nextVertexNo].x.value),
-							(float) (light.position.y.value + vectors[nextVertexNo].y.value));
-					shadow.drawingArea.close();
-					
-				} 
-				else { //if opposite borders shadow
-					
-					shadow.drawingArea.moveTo((float) (light.position.x.value + vectors[biggestAngleNo].x.value),
-							(float) (light.position.y.value + vectors[biggestAngleNo].y.value));
-					shadow.drawingArea.lineTo((float) (light.position.x.value + vectors[shortestNo].x.value),
-							(float) (light.position.y.value + vectors[shortestNo].y.value));
-					shadow.drawingArea.lineTo((float) (light.position.x.value + vectors[lowestAngleNo].x.value),
-											(float) (light.position.y.value + vectors[lowestAngleNo].y.value));
-					for (int i = 0; i < 4; i++) {
-						vectors[i].selfMulti(shadowRatio);
-					}
-					shadow.drawingArea.lineTo((float) (light.position.x.value + vectors[lowestAngleNo].x.value),
-							(float) (light.position.y.value + vectors[lowestAngleNo].y.value));
-					shadow.drawingArea.lineTo((float) (light.position.x.value + vectors[longestNo].x.value),
-											(float) (light.position.y.value + vectors[longestNo].y.value));
-					shadow.drawingArea.lineTo((float) (light.position.x.value + vectors[biggestAngleNo].x.value),
-											(float) (light.position.y.value + vectors[biggestAngleNo].y.value));
-					
-					shadow.drawingArea.close();
-					
-				}
-			} 
-			else {
-				for (int i = 3; i >= 0; i--) {
-					if (i == 3) {
-						shadow.drawingArea.moveTo((float) (light.position.x.value + vectors[i].x.value),
-								(float) (light.position.y.value + vectors[i].y.value));
-					} 
-					else {
-						shadow.drawingArea.lineTo((float) (light.position.x.value + vectors[i].x.value),
-								(float) (light.position.y.value + vectors[i].y.value));
-					}
-				}
-				shadow.drawingArea.close();
-				for (int i = 0; i < 4; i++) {
-					vectors[i].selfMulti(shadowRatio);
-					if (i == 0) {
-						shadow.drawingArea.moveTo((float) (light.position.x.value + vectors[i].x.value),
-								(float) (light.position.y.value + vectors[i].y.value));
-					} 
-					else {
-						shadow.drawingArea.lineTo((float) (light.position.x.value + vectors[i].x.value),
-								(float) (light.position.y.value + vectors[i].y.value));
-					}
-				}
-				shadow.drawingArea.close();
-			}
-	
-	
+			computeBlockDrawingArea(shadow, (GeometryBlock) shadow.geometry);
 		}
-		/*toHead.set(light.position, shadow.position);
-		toHead.rotate(Math.PI / 4);
-		shadow.localPos.setAlpha((float)(toHead.computeAngle()));*/
 	}
-	
-	
-	
-	private void computeDrawingLayer(OutputGraphicalShadow shadow) {
-		
-		if (shadow.geometry instanceof GeometryVerticalCylinder) {
-			cylinder = (GeometryVerticalCylinder) shadow.geometry;
-			topPosition.set(shadow.position.x.value, shadow.position.y.value, shadow.position.z.value + cylinder.height.value);
-			toTop.set(topPosition, light.position);
-			distanceToTop = toTop.length2();
-			fullHeight = Math.abs(toTop.z.value) + cylinder.height.value;
-			shadowRatio = fullHeight / Math.abs(toTop.z.value);
-			toShadow.set(toTop);
-			toShadow.selfMulti(shadowRatio);
-			px = (float) light.position.x.value; py = (float) light.position.y.value;
-			cylinderRadius = cylinder.radius.value;
-			shadowRadius = cylinderRadius * (float) shadowRatio;
-			
-			//layer.shadowArea.rewind();
-			layer.shadowArea.addCircle(px + (float) toShadow.x.value, py + (float) toShadow.y.value, shadowRadius, Path.Direction.CCW);
-			if (distanceToTop > cylinderRadius) {
-				angle = Math.asin(cylinderRadius / distanceToTop); 
-				((Vector2) toTop).rotate(angle);
-				toTop.restore();
-				toTop.selfMulti(Math.sqrt(distanceToTop * distanceToTop - cylinderRadius * cylinderRadius));
-				layer.shadowArea.moveTo(px + (float) toTop.x.value, py + (float) toTop.y.value);
-				toTop.selfMulti(shadowRatio);
-				layer.shadowArea.lineTo(px + (float) toTop.x.value, py + (float) toTop.y.value);
-				
-				((Vector2) toShadow).rotate(-angle);
-				distanceToShadow = ((Vector2) toShadow).restore();
-				toShadow.selfMulti(Math.sqrt(distanceToShadow * distanceToShadow - shadowRadius * shadowRadius));
-				layer.shadowArea.lineTo(px + (float) toShadow.x.value, py + (float) toShadow.y.value);
-				toShadow.selfMulti(1.0d / shadowRatio);
-				layer.shadowArea.lineTo(px + (float) toShadow.x.value, py + (float) toShadow.y.value);
-				layer.shadowArea.close();
-			}
-			
-		} 
-		else if (shadow.geometry instanceof GeometryBlock) {
-			block = (GeometryBlock) shadow.geometry;
-			topPosition.set(shadow.position.x.value, shadow.position.y.value, shadow.position.z.value + block.height.value);
-			toTop.set(topPosition, light.position);
-			fullHeight = Math.abs(toTop.z.value) + block.height.value;
-			shadowRatio = fullHeight / Math.abs(toTop.z.value);
-			toShadow.set(toTop);
-			toShadow.selfMulti(shadowRatio);
-			sizeX = (block.width.value * 0.5f); sizeY = (block.depth.value * 0.5f);
-			vectors[0].set(-sizeX, -sizeY);
-			vectors[1].set(-sizeX, sizeY);
-			vectors[2].set(sizeX, sizeY);
-			vectors[3].set(sizeX, -sizeY);
-			boolean isLightInBlock = false;
-			double angle = shadow.position.getAlpha();
-			double currentLength = 0, shortestLength = 0, longestLength = 0;
-			int shortestNo = 0, longestNo = 0; 
-			for (int i = 0; i < 4; i++) { 
-				vectors[i].rotate(angle);
-				vectors[i].addict(toTop);
-				projections[i] = vectors[i].myProectionOnIdentityVector(toTop);
-				currentLength = vectors[i].length2();
-				if (i == 0) {
-					shortestLength = currentLength;
-					longestLength = currentLength;
-				} 
-				else {
-					if (projections[i] * projections[0] <= 0) {
-						isLightInBlock = true;
-					}
-					if (currentLength < shortestLength) {
-						shortestLength = currentLength; 
-						shortestNo = i;
-					} 
-					else if (currentLength > longestLength) {
-						longestLength = currentLength;
-						longestNo = i;
-					}
-				}
-			}
-			
-			//shadow.drawingArea.rewind();
-			
-			if (!isLightInBlock) {
-				double biggestAngle = 0, lowestAngle = 0;
-				int biggestAngleNo = 0, lowestAngleNo = 0;
-				for (int i = 0; i < 4; i++) {
-					angles[i] = vectors[i].computeAngle(toTop);
-					if (angles[i] > biggestAngle) {
-						biggestAngle = angles[i];
-						biggestAngleNo = i;
-					} 
-					if (angles[i] < lowestAngle) {
-						lowestAngle = angles[i];
-						lowestAngleNo = i;
-					}
-				}
-				if (biggestAngleNo > lowestAngleNo) {
-					int tmp = biggestAngleNo;
-					biggestAngleNo = lowestAngleNo;
-					lowestAngleNo = tmp;
-				}
-				
-				if ((lowestAngleNo - biggestAngleNo) % 2 == 1) { //if closest border shadow
-					layer.shadowArea.moveTo((float) (light.position.x.value + vectors[biggestAngleNo].x.value),
-							(float) (light.position.y.value + vectors[biggestAngleNo].y.value));
-					layer.shadowArea.lineTo((float) (light.position.x.value + vectors[lowestAngleNo].x.value),
-							(float) (light.position.y.value + vectors[lowestAngleNo].y.value));
-					for (int i = 0; i < 4; i++) {
-						vectors[i].selfMulti(shadowRatio);
-					}
-					layer.shadowArea.lineTo((float) (light.position.x.value + vectors[lowestAngleNo].x.value),
-							(float) (light.position.y.value + vectors[lowestAngleNo].y.value));
-					int direct = 1;
-					int nextVertexNo = (lowestAngleNo + direct) % 4;
-					if (nextVertexNo == biggestAngleNo) {
-						direct = -1;
-						nextVertexNo = (lowestAngleNo + direct) % 4;
-					}
-					layer.shadowArea.lineTo((float) (light.position.x.value + vectors[nextVertexNo].x.value),
-							(float) (light.position.y.value + vectors[nextVertexNo].y.value));
-					nextVertexNo = (nextVertexNo + direct) % 4;
-					layer.shadowArea.lineTo((float) (light.position.x.value + vectors[nextVertexNo].x.value),
-							(float) (light.position.y.value + vectors[nextVertexNo].y.value));
-					nextVertexNo = (nextVertexNo + direct) % 4;
-					layer.shadowArea.lineTo((float) (light.position.x.value + vectors[nextVertexNo].x.value),
-							(float) (light.position.y.value + vectors[nextVertexNo].y.value));
-					layer.shadowArea.close();
-					
-				} 
-				else { //if opposite borders shadow
-					
-					layer.shadowArea.moveTo((float) (light.position.x.value + vectors[biggestAngleNo].x.value),
-							(float) (light.position.y.value + vectors[biggestAngleNo].y.value));
-					layer.shadowArea.lineTo((float) (light.position.x.value + vectors[shortestNo].x.value),
-							(float) (light.position.y.value + vectors[shortestNo].y.value));
-					layer.shadowArea.lineTo((float) (light.position.x.value + vectors[lowestAngleNo].x.value),
-											(float) (light.position.y.value + vectors[lowestAngleNo].y.value));
-					for (int i = 0; i < 4; i++) {
-						vectors[i].selfMulti(shadowRatio);
-					}
-					layer.shadowArea.lineTo((float) (light.position.x.value + vectors[lowestAngleNo].x.value),
-							(float) (light.position.y.value + vectors[lowestAngleNo].y.value));
-					layer.shadowArea.lineTo((float) (light.position.x.value + vectors[longestNo].x.value),
-											(float) (light.position.y.value + vectors[longestNo].y.value));
-					layer.shadowArea.lineTo((float) (light.position.x.value + vectors[biggestAngleNo].x.value),
-											(float) (light.position.y.value + vectors[biggestAngleNo].y.value));
-					
-					layer.shadowArea.close();
-					
-				}
+
+	private void computeCylinderDrawingArea(OutputGraphicalShadow shadow, GeometryVerticalCylinder geometry) {
+		cylinder = geometry;
+		topPosition.set(shadow.position.x.value, shadow.position.y.value,
+				shadow.position.z.value + geometry.height.value);
+		toTop.set(topPosition, light.position);
+		distanceToTop = toTop.length2();
+
+		double radius = Math.abs(geometry.radius.value);
+		double height = Math.abs(geometry.height.value);
+		double lightTopZ = Math.abs(toTop.z.value);
+		if (lightTopZ < GEOMETRY_EPSILON) return;
+
+		fullHeight = lightTopZ + height;
+		shadowRatio = fullHeight / lightTopZ;
+
+		toShadow.set(toTop);
+		toShadow.selfMulti(shadowRatio);
+		px = (float) light.position.x.value;
+		py = (float) light.position.y.value;
+		cylinderRadius = (float) radius;
+		shadowRadius = (float) (radius * shadowRatio);
+
+		ArrayList<double[]> points = new ArrayList<double[]>();
+		addCirclePoints(points, (double) shadow.position.x.value, (double) shadow.position.y.value, radius, HULL_SEGMENTS);
+		addCirclePoints(points, (double) light.position.x.value + toShadow.x.value,
+				(double) light.position.y.value + toShadow.y.value, radius * shadowRatio, HULL_SEGMENTS);
+		addHullToPath(shadow.drawingArea, points);
+	}
+
+	private void computeBlockDrawingArea(OutputGraphicalShadow shadow, GeometryBlock geometry) {
+		block = geometry;
+		topPosition.set(shadow.position.x.value, shadow.position.y.value,
+				shadow.position.z.value + geometry.height.value);
+		toTop.set(topPosition, light.position);
+
+		double height = Math.abs(geometry.height.value);
+		double lightTopZ = Math.abs(toTop.z.value);
+		if (lightTopZ < GEOMETRY_EPSILON) return;
+
+		fullHeight = lightTopZ + height;
+		shadowRatio = fullHeight / lightTopZ;
+
+		toShadow.set(toTop);
+		toShadow.selfMulti(shadowRatio);
+
+		sizeX = Math.abs(geometry.width.value * 0.5f);
+		sizeY = Math.abs(geometry.depth.value * 0.5f);
+		double angle = shadow.position.getAlpha();
+
+		ArrayList<double[]> points = new ArrayList<double[]>();
+		vectors[0].set(-sizeX, -sizeY);
+		vectors[1].set(-sizeX, sizeY);
+		vectors[2].set(sizeX, sizeY);
+		vectors[3].set(sizeX, -sizeY);
+
+		for (int i = 0; i < vectors.length; i++) {
+			vectors[i].rotate(angle);
+			addPoint(points, (double) shadow.position.x.value + vectors[i].x.value,
+					(double) shadow.position.y.value + vectors[i].y.value);
+			addPoint(points, (double) light.position.x.value + (toTop.x.value + vectors[i].x.value) * shadowRatio,
+					(double) light.position.y.value + (toTop.y.value + vectors[i].y.value) * shadowRatio);
+		}
+
+		addHullToPath(shadow.drawingArea, points);
+	}
+
+	private void addCirclePoints(ArrayList<double[]> points, double x, double y, double radius, int segments) {
+		if (radius < GEOMETRY_EPSILON) {
+			addPoint(points, x, y);
+			return;
+		}
+		for (int i = 0; i < segments; i++) {
+			double pointAngle = 2.0d * Math.PI * (double) i / (double) segments;
+			addPoint(points, x + Math.cos(pointAngle) * radius, y + Math.sin(pointAngle) * radius);
+		}
+	}
+
+	private void addPoint(ArrayList<double[]> points, double x, double y) {
+		for (int i = 0; i < points.size(); i++) {
+			double[] point = points.get(i);
+			if (Math.abs(point[0] - x) < GEOMETRY_EPSILON && Math.abs(point[1] - y) < GEOMETRY_EPSILON) return;
+		}
+		points.add(new double[] { x, y });
+	}
+
+	private void addHullToPath(Path path, ArrayList<double[]> points) {
+		ArrayList<double[]> hull = convexHull(points);
+		if (hull.size() < 3) return;
+
+		for (int i = 0; i < hull.size(); i++) {
+			double[] point = hull.get(i);
+			if (i == 0) {
+				path.moveTo((float) point[0], (float) point[1]);
 			} 
 			else {
-				for (int i = 3; i >= 0; i--) {
-					if (i == 3) {
-						layer.shadowArea.moveTo((float) (light.position.x.value + vectors[i].x.value),
-								(float) (light.position.y.value + vectors[i].y.value));
-					} else {
-						layer.shadowArea.lineTo((float) (light.position.x.value + vectors[i].x.value),
-								(float) (light.position.y.value + vectors[i].y.value));
-					}
-				}
-				layer.shadowArea.close();
-				for (int i = 0; i < 4; i++) {
-					vectors[i].selfMulti(shadowRatio);
-					if (i == 0) {
-						layer.shadowArea.moveTo((float) (light.position.x.value + vectors[i].x.value),
-								(float) (light.position.y.value + vectors[i].y.value));
-					} 
-					else {
-						layer.shadowArea.lineTo((float) (light.position.x.value + vectors[i].x.value),
-								(float) (light.position.y.value + vectors[i].y.value));
-					}
-				}
-				layer.shadowArea.close();
+				path.lineTo((float) point[0], (float) point[1]);
 			}
-	
-	
 		}
-		/*toHead.set(light.position, shadow.position);
-		toHead.rotate(Math.PI / 4);
-		shadow.localPos.setAlpha((float)(toHead.computeAngle()));*/
+		path.close();
+	}
+
+	private ArrayList<double[]> convexHull(ArrayList<double[]> points) {
+		if (points.size() < 2) return new ArrayList<double[]>(points);
+
+		Collections.sort(points, new Comparator<double[]>() {
+			@Override
+			public int compare(double[] a, double[] b) {
+				int xCompare = Double.compare(a[0], b[0]);
+				return xCompare != 0 ? xCompare : Double.compare(a[1], b[1]);
+			}
+		});
+
+		ArrayList<double[]> unique = new ArrayList<double[]>();
+		for (int i = 0; i < points.size(); i++) {
+			double[] point = points.get(i);
+			if (unique.isEmpty()
+					|| Math.abs(unique.get(unique.size() - 1)[0] - point[0]) >= GEOMETRY_EPSILON
+					|| Math.abs(unique.get(unique.size() - 1)[1] - point[1]) >= GEOMETRY_EPSILON) {
+				unique.add(point);
+			}
+		}
+
+		if (unique.size() < 3) return unique;
+
+		ArrayList<double[]> lower = new ArrayList<double[]>();
+		for (int i = 0; i < unique.size(); i++) {
+			double[] point = unique.get(i);
+			while (lower.size() >= 2
+					&& cross(lower.get(lower.size() - 2), lower.get(lower.size() - 1), point) <= 0.0d) {
+				lower.remove(lower.size() - 1);
+			}
+			lower.add(point);
+		}
+
+		ArrayList<double[]> upper = new ArrayList<double[]>();
+		for (int i = unique.size() - 1; i >= 0; i--) {
+			double[] point = unique.get(i);
+			while (upper.size() >= 2
+					&& cross(upper.get(upper.size() - 2), upper.get(upper.size() - 1), point) <= 0.0d) {
+				upper.remove(upper.size() - 1);
+			}
+			upper.add(point);
+		}
+
+		lower.remove(lower.size() - 1);
+		upper.remove(upper.size() - 1);
+		lower.addAll(upper);
+		return lower;
+	}
+
+	private double cross(double[] origin, double[] a, double[] b) {
+		return (a[0] - origin[0]) * (b[1] - origin[1]) - (a[1] - origin[1]) * (b[0] - origin[0]);
 	}
 
 	@Override

@@ -114,10 +114,10 @@ public class OutputGraphicalLight extends OutputGraphicalInterface {
 		this.diffuse.value = diffuse;
 		
 		diffuseFilter = new LightingColorFilter(
-        		Color.rgb(	(int) (red.value * this.diffuse.value * intensity.value), 
-        					(int) (green.value * this.diffuse.value * intensity.value),
-        					(int) (blue.value * this.diffuse.value * intensity.value)), 
-				Color.BLACK);
+       		Color.rgb(	(int) (red.value * this.diffuse.value * intensity.value), 
+       					(int) (green.value * this.diffuse.value * intensity.value),
+       					(int) (blue.value * this.diffuse.value * intensity.value)), 
+				Color.TRANSPARENT);
 	}
 	
 	private void setFilters() {
@@ -126,11 +126,11 @@ public class OutputGraphicalLight extends OutputGraphicalInterface {
 				Color.rgb(	(int) (red.value * intensity.value), 
 							(int) (green.value * intensity.value),
 							(int) (blue.value * intensity.value)), 
-				Color.BLACK);
+				Color.TRANSPARENT);
         diffuseFilter = new LightingColorFilter(
-        		Color.rgb(	(int) (red.value * diffuse.value * intensity.value), 
-        					(int) (green.value * diffuse.value * intensity.value),
-        					(int) (blue.value * diffuse.value * intensity.value)), 
-        		Color.BLACK);
+       		Color.rgb(	(int) (red.value * diffuse.value * intensity.value), 
+       					(int) (green.value * diffuse.value * intensity.value),
+       					(int) (blue.value * diffuse.value * intensity.value)), 
+       		Color.TRANSPARENT);
 	}
 }

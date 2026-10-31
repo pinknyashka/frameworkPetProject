@@ -53,7 +53,7 @@
     	<handler subpackage = "draw" engineName = "HandlerDraw">
     	    <sub subpackage = "sprite" engineName = "SubSpriteDraw"/>
     	    <sub subpackage = "text" engineName = "SubDrawText"/>
-    	    <!-- <sub subpackage = "shadows" engineName = "SubShadows"/> -->
+    	    <sub subpackage = "shadows" engineName = "SubShadows"/>
     	    <sub subpackage = "shadows" engineName = "SubRelief"/>
     	    <sub subpackage = "shadows" engineName = "SubLight"/>
     	    <sub engineName = "SubBasicGraphical"/>
@@ -216,7 +216,7 @@
 			<entity name = "light" single = "true">
 	    
 		   		<pict 
-		   		    position:x = "0" position:y = "0" position:z = "100/16"
+		   		    position:x = "0" position:y = "0" position:z = "100/4"
 		   		    size:x = "25/24" size:y = "25/24" 
 		   		    isCircle = "true" radius = "100/48"
 		   		    spriteName = "valid_checker" 
@@ -226,11 +226,11 @@
 		   		</pict>
 		   		
 		   		<light 
-		   		    position:x = "0" position:y = "0" position:z = "100/16"
+		   		    position:x = "0" position:y = "0" position:z = "100/4"
 		   		    radius = "1000" glow = "false"
 		   		    color = "#FFFFFF" intensity = "0.9" diffuse = "0.3"/> 
 		   		    
-		   		<drag position:x = "0" position:y = "0" position:z = "100/16" radius = "100/48"/> 
+		   		<drag position:x = "0" position:y = "0" position:z = "100/4" radius = "100/48"/> 
 		   		
 			</entity>
 		
@@ -246,6 +246,9 @@
 				
 				<!-- graphical components -->
 	
+				<shadow position:z = "0" layer = "0" isRotatable = "false" localTransparency = "0.6"
+				    geometry:type = "v_cylinder" geometry:radius = "4" geometry:height = "2"/>
+
 		   		<pict radius = "4" spriteName = "firehead_sprite" layer = "2" position:alpha = "3.14" spriteCollumnsNum = "3"/>
 		   		
 		   		<relief 
@@ -322,7 +325,10 @@
 				
 				<!-- graphical components -->
 	
-				<pict radius = "4" spriteName = "bonehead" layer = "2"/>
+				<shadow position:z = "0" layer = "0" isRotatable = "false" localTransparency = "0.6"
+				    geometry:type = "v_cylinder" geometry:radius = "4" geometry:height = "2"/>
+
+		   		<pict radius = "4" spriteName = "bonehead" layer = "2"/>
 				
 				<relief 
 				    position:z = "2.0" 

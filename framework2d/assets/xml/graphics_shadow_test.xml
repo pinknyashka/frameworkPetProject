@@ -58,7 +58,7 @@
         <text
             position:x = "-30" position:y = "10"
             size:x = "40" size:y = "10" layer = "5"
-            text = "CYL R4 H2" color = "#FFFFFF" fontSize = "12"/>
+            text = "CYL R4 H2" color = "#FFFFFF" fontSize = "3"/>
     </entity>
 
     <!-- caster 2: same radius, taller -> longer shadow -->
@@ -72,7 +72,7 @@
         <text
             position:x = "-10" position:y = "10"
             size:x = "40" size:y = "10" layer = "5"
-            text = "CYL R4 H8" color = "#FFFFFF" fontSize = "12"/>
+            text = "CYL R4 H8" color = "#FFFFFF" fontSize = "3"/>
     </entity>
 
     <!-- caster 3: wider cylinder -->
@@ -86,7 +86,7 @@
         <text
             position:x = "10" position:y = "10"
             size:x = "40" size:y = "10" layer = "5"
-            text = "CYL R6 H4" color = "#FFFFFF" fontSize = "12"/>
+            text = "CYL R6 H4" color = "#FFFFFF" fontSize = "3"/>
     </entity>
 
     <!-- caster 4: box geometry -->
@@ -100,7 +100,7 @@
         <text
             position:x = "30" position:y = "10"
             size:x = "40" size:y = "10" layer = "5"
-            text = "BLOCK W8 D4 H6" color = "#FFFFFF" fontSize = "12"/>
+            text = "BLOCK W8 D4 H6" color = "#FFFFFF" fontSize = "3"/>
     </entity>
 
 </map>

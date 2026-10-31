@@ -1,0 +1,82 @@
+﻿<?xml version = "1.0" encoding = "UTF-8"?>
+<map version = "1.0" name = "legacy shadow shape test" parallel = "false">
+
+    <!-- Legacy (compat Canvas) graphics path: OutputDraw + HandlerDraw + SubShadows -->
+    <direct package = "ru.framework2d.graphics" engineName = "OutputDraw">
+        <handler subpackage = "draw" engineName = "HandlerDraw">
+            <sub subpackage = "sprite" engineName = "SubSpriteDraw"/>
+            <sub subpackage = "shadows" engineName = "SubShadows"/>
+            <sub subpackage = "shadows" engineName = "SubLight"/>
+            <sub engineName = "SubBasicGraphical"/>
+        </handler>
+    </direct>
+
+    <replace name = "width" value = "DisplayWidth"/>
+    <replace name = "height" value = "DisplayHeight"/>
+
+    <!-- No camera on purpose: world coordinates are window pixels, so the projected
+         shadow geometry can be measured straight off a smoke screenshot.
+         Light is at (120,120) with height 200, so every shadow is stretched
+         down/right, away from the light, by lightZ / (lightZ - casterHeight).
+         Shadows use layer 5 here only so the full semi-transparent silhouette can be
+         measured without sprite occlusion; checkers_tree keeps shadow layer 0. -->
+
+    <entity name = "background" single = "true">
+        <pict spriteName = "board" layer = "-1"
+            position:x = "width/2" position:y = "height/2"
+            size:x = "width" size:y = "height"/>
+    </entity>
+
+    <entity name = "light" single = "true">
+        <pict spriteName = "valid_checker" layer = "4"
+            position:x = "120" position:y = "120"
+            isCircle = "true" radius = "10"/>
+
+        <light position:x = "120" position:y = "120" position:z = "200"
+            radius = "3000" color = "#FFFFFF" intensity = "0.9" diffuse = "0.3"/>
+    </entity>
+
+    <!-- caster 1: v_cylinder r40 h30 at (300,300). ratio 200/170 = 1.176,
+         caster distance 254.6, projected disc r47.1 at (331.8,331.8):
+         the shaded band runs to ~346 from the light along the 45 deg ray -->
+    <entity name = "cyl_r40_h30" single = "true">
+        <shadow position:x = "300" position:y = "300" position:z = "0"
+            layer = "5" isRotatable = "false" localTransparency = "0.6"
+            geometry:type = "v_cylinder" geometry:radius = "40" geometry:height = "30"/>
+        <pict spriteName = "bonehead" layer = "2"
+            position:x = "300" position:y = "300"
+            isCircle = "true" radius = "40"/>
+    </entity>
+
+    <!-- caster 2: block 80x80 h30 at (470,250) -->
+    <entity name = "block_w80_d80_h30" single = "true">
+        <shadow position:x = "470" position:y = "250" position:z = "0"
+            layer = "5" isRotatable = "false" localTransparency = "0.6"
+            geometry:type = "block" geometry:width = "80" geometry:depth = "80" geometry:height = "30"/>
+        <pict spriteName = "firehead_sprite" layer = "2"
+            position:x = "470" position:y = "250"
+            size:x = "80" size:y = "80" spriteCollumnsNum = "3"/>
+    </entity>
+
+    <!-- caster 3: taller and further v_cylinder -> much longer shadow
+         ratio 200/140 = 1.43, caster distance 420.5 -->
+    <entity name = "cyl_r30_h60" single = "true">
+        <shadow position:x = "300" position:y = "500" position:z = "0"
+            layer = "5" isRotatable = "false" localTransparency = "0.6"
+            geometry:type = "v_cylinder" geometry:radius = "30" geometry:height = "60"/>
+        <pict spriteName = "bonehead" layer = "2"
+            position:x = "300" position:y = "500"
+            isCircle = "true" radius = "30"/>
+    </entity>
+
+    <!-- caster 4: low block -> shadow almost coincides with the footprint -->
+    <entity name = "block_w60_d100_h10" single = "true">
+        <shadow position:x = "480" position:y = "680" position:z = "0"
+            layer = "5" isRotatable = "false" localTransparency = "0.6"
+            geometry:type = "block" geometry:width = "60" geometry:depth = "100" geometry:height = "10"/>
+        <pict spriteName = "bonehead" layer = "2"
+            position:x = "480" position:y = "680"
+            size:x = "60" size:y = "100"/>
+    </entity>
+
+</map>

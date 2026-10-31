@@ -21,7 +21,10 @@ public class LightingColorFilter extends ColorFilter {
 
     @Override
     public int filter(int color) {
-        int a = apply(Color.alpha(color), Color.alpha(colorMultiply), Color.alpha(colorAdd));
+        // This filter is a lighting/color tint: it must change RGB only. Alpha is
+        // controlled by Paint and the graphics transparency chain; otherwise a filter
+        // built with Color.BLACK as the additive color would force shadows opaque.
+        int a = Color.alpha(color);
         int r = apply(Color.red(color), Color.red(colorMultiply), Color.red(colorAdd));
         int g = apply(Color.green(color), Color.green(colorMultiply), Color.green(colorAdd));
         int b = apply(Color.blue(color), Color.blue(colorMultiply), Color.blue(colorAdd));
