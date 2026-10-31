@@ -165,10 +165,10 @@ The `core/src/main/java/ru/framework2d/sound/` package contains the active sound
 
 - `DirectSound` — the sound engine node used from map files.
 - `HandlerSounds` — plays collision-triggered audio.
-- `AudioComponent` — the `audio` component; defines `sound`, `volume`, `fullVolumeSpeed`, and `minVolume`.
+- `AudioComponent` — the `audio` component; defines `sound`, `sounds`, `playback`, `volume`, `fullVolumeSpeed`, and `minVolume`.
 - `SoundPlayer` — playback helper backed by `GameResources.getSound(...)` and libGDX `Sound`.
 
-Collision audio is triggered through `PhysicalShape.collision` and scaled by `PhysicalShape.collisionSpeed`: faster relative impact speed plays louder, down to `minVolume` for slow hits. `assets/xml/sound_test.xml` is a smoke map for verifying this behavior with `--smoke --map=sound_test`.
+Collision audio is triggered through `PhysicalShape.collision` and scaled by `PhysicalShape.collisionSpeed`: faster relative impact speed plays louder, down to `minVolume` for slow hits. A random collision sound set can be defined in map XML with `sounds = "%sname1,name2"` and `playback = "%srandom"`; otherwise `sound` is played. `assets/xml/sound_test.xml` is a smoke map for verifying this behavior with `--smoke --map=sound_test`.
 
 ## Gotchas
 

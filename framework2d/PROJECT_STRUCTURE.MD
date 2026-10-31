@@ -401,11 +401,11 @@ These advanced drawing features currently rely on libGDX-backed approximations a
 | File | Description |
 |---|---|
 | `DirectSound.java` | Sound engine node for maps. |
-| `HandlerSounds.java` | Plays collision-triggered audio and scales volume by `PhysicalShape.collisionSpeed`. |
-| `AudioComponent.java` | `audio` component; defines `sound`, `volume`, `fullVolumeSpeed`, and `minVolume`. |
+| `HandlerSounds.java` | Plays collision-triggered audio, scales volume by `PhysicalShape.collisionSpeed`, and picks from `sounds` when `playback` is `random`. |
+| `AudioComponent.java` | `audio` component; defines `sound`, `sounds`, `playback`, `volume`, `fullVolumeSpeed`, and `minVolume`. |
 | `SoundPlayer.java` | Playback helper backed by `GameResources.getSound(...)` and libGDX `Sound`. |
 
-`assets/xml/sound_test.xml` is a smoke map for collision sound and volume-ramp verification: `--smoke --map=sound_test`.
+`assets/xml/sound_test.xml` is a smoke map for collision sound, volume-ramp, and random-list verification: `--smoke --map=sound_test`.
 
 ## `lwjgl3/` — desktop module
 
@@ -471,7 +471,7 @@ Runtime config consumed by migrated `GameResources`. Defines Maps/Images/Sounds 
 |---|---|
 | `checkers_tree.xml` | Currently the default active runtime map. Uses the current engine-tag schema: `<direct package="..." engineName="...">`, `<handler subpackage="..." engineName="...">`, `<interaction subpackage="..." engineName="...">`, `<sub subpackage="..." engineName="...">`. |
 | `binding_test.xml` | Smoke/verification map for the data-binding feature (`<*_binding` attributes on component data fields); loadable via `--map=binding_test` in the desktop run. |
-| `sound_test.xml` | Smoke/verification map for collision sound and impact-speed volume ramp; loadable via `--map=sound_test` in the desktop run. |
+| `sound_test.xml` | Smoke/verification map for collision sound, impact-speed volume ramp, and random sound-list playback; loadable via `--map=sound_test` in the desktop run. |
 | `battle_checkers.xml` | Legacy/preview map kept for compatibility and reference. Uses an older engine-tag style (`name = "physical"`, etc.) that does not currently match `EnginesManager.connectEngine`'s reflective schema. Not loaded by the current bridge. |
 | `checkers_with_blocks.xml` | Legacy/preview block-phase map kept for compatibility and reference. Uses engine-tag attributes/styles that do not currently match the active runtime bridge's parser expectations. Not loaded by the current bridge. |
 
@@ -501,6 +501,8 @@ Game images copied from old drawable resources so they can be loaded by libGDX `
 | File | Description |
 |---|---|
 | `bump.ogg` | Collision bump sound used by `checkers_tree` and `sound_test`. |
+| `H_I4_hit2.ogg` | Collision impact variant used by the random sound set in `checkers_tree` and `sound_test`. |
+| `H_I5_hit3.ogg` | Collision impact variant used by the random sound set in `checkers_tree` and `sound_test`. |
 
 ## Legacy Eclipse/ANT remnants
 
@@ -527,6 +529,6 @@ These files are retained during migration but are not used by the Gradle modules
 - **Advanced drawing is approximate.** `Canvas`, `Paint`, `GradientDrawable`, `LightingColorFilter`, `Path`, and clipping/shadow/relief behavior are currently compatibility approximations backed by libGDX.
 - **The active runtime map is `checkers_tree`.** The current bridge does not yet reproduce the old `MainActivity` map picker.
 - **Other maps remain present as legacy data.** They may require map-schema updates before they can be loaded by the current engine reflection path.
-- **Sound is active.** The `sound` package contains the collision-triggered playback path; collision volume is scaled by `PhysicalShape.collisionSpeed`.
+- **Sound is active.** The `sound` package contains the collision-triggered playback path; collision volume is scaled by `PhysicalShape.collisionSpeed`, and `playback = "random"` selects a name from the comma-separated `sounds` set.
 - **Keep files UTF-8 (no BOM).** The root Gradle build compiles with `UTF-8`; the legacy cp1251 engine comments and `changelog.txt` have been re-encoded.
 - **Tests exist, but are not enough for rendering/assets.** `:core:test` runs the headless regression suite and `:core:check` adds `:core:lockSelfTest`; visual/platform correctness still needs desktop smoke, APK assembly, and on-device run.

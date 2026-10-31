@@ -114,7 +114,7 @@ public class HandlerSoundsRegistrationTest {
 		assertNull(detached.entity);
 		assertEquals(1, detached.lstLinkedHandlers.size());
 		assertSame(handler, detached.lstLinkedHandlers.get(0));
-		assertEquals(6, detached.lstData.size());
+		assertEquals(8, detached.lstData.size());
 	}
 
 	@Test
@@ -125,11 +125,13 @@ public class HandlerSoundsRegistrationTest {
 		List<String> names = new ArrayList<String>();
 		for (DataInterface data : first.lstData) names.add(data.getName());
 		Collections.sort(names);
-		assertEquals(Arrays.asList("collision", "fullVolumeSpeed", "minVolume",
-				"position", "sound", "volume"), names);
+		assertEquals(Arrays.asList("collision", "fullVolumeSpeed", "minVolume", "playback",
+				"position", "sound", "sounds", "volume"), names);
 
 		assertEquals("collision", first.collision.getContext().name);
 		assertEquals("sound", first.sound.getContext().name);
+		assertEquals("sounds", first.sounds.getContext().name);
+		assertEquals("playback", first.playback.getContext().name);
 		assertEquals("volume", first.volume.getContext().name);
 		assertEquals("fullVolumeSpeed", first.fullVolumeSpeed.getContext().name);
 		assertEquals("minVolume", first.minVolume.getContext().name);

@@ -57,6 +57,8 @@ public class AudioComponentDataTest {
 		assertEquals("audio", audio.getShortClassName());
 		assertEquals("AudioComponent", audio.getName());
 		assertEquals("bump", audio.sound.value);
+		assertEquals("", audio.sounds.value);
+		assertEquals("single", audio.playback.value);
 		assertEquals(1.0f, audio.volume.value, 0.0001f);
 		assertEquals(10.0f, audio.fullVolumeSpeed.value, 0.0001f);
 		assertEquals(0.15f, audio.minVolume.value, 0.0001f);
@@ -68,11 +70,15 @@ public class AudioComponentDataTest {
 	public void soundAttributesLandOnTheMatchingDataField() {
 		AudioComponent audio = audio(
 				"sound", SoundTestSupport.textValue("click"),
+				"sounds", SoundTestSupport.textValue("a,b,c"),
+				"playback", SoundTestSupport.textValue("random"),
 				"volume", SoundTestSupport.fractionalValue(0.5f),
 				"fullVolumeSpeed", SoundTestSupport.fractionalValue(4.0f),
 				"minVolume", SoundTestSupport.fractionalValue(0.3f));
 
 		assertEquals("click", audio.sound.value);
+		assertEquals("a,b,c", audio.sounds.value);
+		assertEquals("random", audio.playback.value);
 		assertEquals(0.5f, audio.volume.value, 0.0001f);
 		assertEquals(4.0f, audio.fullVolumeSpeed.value, 0.0001f);
 		assertEquals(0.3f, audio.minVolume.value, 0.0001f);
@@ -85,10 +91,14 @@ public class AudioComponentDataTest {
 		AudioComponent audio = audio(
 				"Volume", SoundTestSupport.fractionalValue(0.25f),
 				"SOUND", SoundTestSupport.textValue("click"),
+				"Sounds", SoundTestSupport.textValue("a,b,c"),
+				"Playback", SoundTestSupport.textValue("random"),
 				"minvolume", SoundTestSupport.fractionalValue(0.9f));
 
 		assertEquals(1.0f, audio.volume.value, 0.0001f);
 		assertEquals("bump", audio.sound.value);
+		assertEquals("", audio.sounds.value);
+		assertEquals("single", audio.playback.value);
 		assertEquals(0.15f, audio.minVolume.value, 0.0001f);
 	}
 
@@ -164,6 +174,8 @@ public class AudioComponentDataTest {
 		AudioComponent prototype = SoundTestSupport.audio(handler, SoundTestSupport.entity("proto"));
 		prototype.volume.value = 0.4f;
 		prototype.sound.value = "click";
+		prototype.sounds.value = "a,b,c";
+		prototype.playback.value = "random";
 		prototype.minVolume.value = 0.3f;
 		prototype.fullVolumeSpeed.value = 4.0f;
 		Entity copies = SoundTestSupport.entity("copies");
@@ -174,9 +186,11 @@ public class AudioComponentDataTest {
 		AudioComponent clone = (AudioComponent) made;
 		assertEquals(0.4f, clone.volume.value, 0.0001f);
 		assertEquals("click", clone.sound.value);
+		assertEquals("a,b,c", clone.sounds.value);
+		assertEquals("random", clone.playback.value);
 		assertEquals(0.3f, clone.minVolume.value, 0.0001f);
 		assertEquals(4.0f, clone.fullVolumeSpeed.value, 0.0001f);
-		assertEquals(6, clone.lstData.size());
+		assertEquals(8, clone.lstData.size());
 		assertEquals("collision", clone.collision.getName());
 		assertSame(prototype.collision.getContext(), clone.collision.getContext());
 		assertFalse(clone.collision == prototype.collision);

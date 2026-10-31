@@ -1,5 +1,7 @@
 package ru.framework2d.sound;
 
+import java.util.Random;
+
 import ru.framework2d.core.Component;
 import ru.framework2d.core.ComponentsHandler;
 import ru.framework2d.core.DataContext;
@@ -14,6 +16,8 @@ import ru.framework2d.compat.Log;
 public class HandlerSounds extends ComponentsHandler {
 
 	private static final String LOG_TAG = "Sound";
+
+	private Random random = new Random();
 
 	public HandlerSounds() {
 
@@ -59,13 +63,54 @@ public class HandlerSounds extends ComponentsHandler {
 						}
 					}
 
-					SoundPlayer.play(audio.sound.value, volume);
+					String soundName = pickSound(audio);
+					SoundPlayer.play(soundName, volume);
 
-					Log.d(LOG_TAG, name + ": " + object.name + " reacts to <" + signalContext.name + "> -> play " + audio.sound.value + " vol " + volume + ";");
+					Log.d(LOG_TAG, name + ": " + object.name + " reacts to <" + signalContext.name + "> -> play " + soundName + " vol " + volume + ";");
 					return true;
 				}
 			}
 		}
 		return false;
+	}
+
+	private String pickSound(AudioComponent audio) {
+
+		String list = audio.sounds.value;
+		String rule = audio.playback.value;
+
+		if (list == null || list.length() == 0
+				|| rule == null || !"random".equalsIgnoreCase(rule.trim())) {
+			return audio.sound.value;
+		}
+
+		String[] parts = list.split(",");
+		String first = null;
+		int count = 0;
+
+		for (String part : parts) {
+			String name = part.trim();
+			if (name.length() > 0) {
+				if (first == null) first = name;
+				count++;
+			}
+		}
+
+		if (count == 0) return audio.sound.value;
+
+		int pick = random.nextInt(count);
+		if (pick == 0) return first;
+
+		int index = 0;
+		for (String part : parts) {
+			String name = part.trim();
+			if (name.length() > 0 && index++ == pick) return name;
+		}
+
+		return first;
+	}
+
+	void setRandom(Random random) {
+		this.random = random == null ? new Random() : random;
 	}
 }

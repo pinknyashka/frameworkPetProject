@@ -4,6 +4,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Random;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -117,6 +119,51 @@ public class HandlerSoundsTransferTest {
 
 		assertEquals(1.0f, play(SoundTestSupport.collisionSignal(audio)), 0.0001f);
 		assertEquals("click", recorder.lastSound());
+	}
+
+	@Test
+	public void randomPlaybackChoosesTheSelectedNameFromTheList() {
+		handler.setRandom(new Random(0) {
+			@Override
+			public int nextInt(int bound) {
+				assertEquals(3, bound);
+				return 2;
+			}
+		});
+
+		audio.sounds.value = "a, b ,, c";
+		audio.playback.value = "random";
+
+		SoundTestSupport.resetPlayThrottle();
+		assertTrue(handler.transferData(disc, SoundTestSupport.collisionSignal(audio)));
+
+		assertEquals("c", recorder.lastSound());
+	}
+
+	@Test
+	public void randomPlaybackWithNoValidListNamesFallsBackToTheSingleSound() {
+		handler.setRandom(new Random(0));
+
+		audio.sounds.value = " , ";
+		audio.playback.value = "random";
+
+		SoundTestSupport.resetPlayThrottle();
+		assertTrue(handler.transferData(disc, SoundTestSupport.collisionSignal(audio)));
+
+		assertEquals("bump", recorder.lastSound());
+	}
+
+	@Test
+	public void singlePlaybackIgnoresTheRandomList() {
+		handler.setRandom(new Random(0));
+
+		audio.sounds.value = "a,b";
+		audio.playback.value = "single";
+
+		SoundTestSupport.resetPlayThrottle();
+		assertTrue(handler.transferData(disc, SoundTestSupport.collisionSignal(audio)));
+
+		assertEquals("bump", recorder.lastSound());
 	}
 
 	@Test

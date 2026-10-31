@@ -16,6 +16,12 @@ public class AudioComponent extends Component {
 	//the sound played when the collision signal arrives
 	public Text sound = new Text("bump");
 
+	//comma-separated sound names used instead of sound when playback is "random"
+	public Text sounds = new Text("");
+
+	//playback rule: "single" plays sound, "random" picks one name from sounds
+	public Text playback = new Text("single");
+
 	//playback volume, 0..1
 	public Fractional volume = new Fractional(1.0f);
 
