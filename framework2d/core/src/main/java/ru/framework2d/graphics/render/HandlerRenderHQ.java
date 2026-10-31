@@ -12,6 +12,7 @@ import ru.framework2d.data.Position2;
 import ru.framework2d.data.Position3;
 import ru.framework2d.data.Vector2;
 import ru.framework2d.graphics.OutputGraphicalInterface;
+import ru.framework2d.graphics.cameras.HandlerCameras;
 import ru.framework2d.graphics.cameras.OutputGraphicalCamera;
 import ru.framework2d.graphics.render.camera.CameraRenderSystem;
 import ru.framework2d.graphics.render.light.LightRenderSystem;
@@ -68,6 +69,26 @@ public class HandlerRenderHQ extends ComponentsHandler {
     }
 
     @Override
+    public boolean canCreateThisComponent(String componentName) {
+        if (isCamera(componentName) && hasCamerasHandler()) {
+            return false;
+        }
+        return super.canCreateThisComponent(componentName);
+    }
+
+    private boolean isCamera(String componentName) {
+        return OutputGraphicalCamera.SHORT_CLASS_NAME.contentEquals(componentName)
+                || OutputGraphicalCamera.class.getSimpleName().contentEquals(componentName);
+    }
+
+    private boolean hasCamerasHandler() {
+        for (ComponentsHandler handler : enginesManager.lstHandlers) {
+            if (handler instanceof HandlerCameras) return true;
+        }
+        return false;
+    }
+
+    @Override
     public Component connectComponent(Component component) {
         super.connectComponent(component);
 
@@ -101,10 +122,11 @@ public class HandlerRenderHQ extends ComponentsHandler {
             if (data instanceof Position3) {
                 graphical.position.set((Position3) data);
             } else if (data instanceof Point2) {
+                Point2 point = (Point2) data;
+                graphical.position.x.value = point.x.value;
+                graphical.position.y.value = point.y.value;
                 if (data instanceof Position2) {
-                    graphical.position.set((Position2) data);
-                } else {
-                    graphical.position.set((Point2) data);
+                    graphical.position.setAlpha(((Position2) data).getAlpha());
                 }
             } else {
                 return false;

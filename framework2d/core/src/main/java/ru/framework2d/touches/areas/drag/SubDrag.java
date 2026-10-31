@@ -9,6 +9,8 @@ import ru.framework2d.data.Point2;
 import ru.framework2d.touches.WorldPointer;
 
 public class SubDrag extends ComponentsHandler {
+	private final Point2 dragCommit = new Point2();
+
 	public SubDrag() {
 		super(1, (Class <Component>) TouchableAreaDrag.class.asSubclass(Component.class));
 	}
@@ -34,11 +36,16 @@ public class SubDrag extends ComponentsHandler {
 				
 				WorldPointer pointer = dragedArea.lstPointers.get(0);
 				
-				dragedArea.position.set(pointer.position.x.value - dragedArea.dragPoint.x.value,
-										pointer.position.y.value - dragedArea.dragPoint.y.value);
+				double x = pointer.position.x.value - dragedArea.dragPoint.x.value;
+				double y = pointer.position.y.value - dragedArea.dragPoint.y.value;
+				dragedArea.position.set(x, y);
 				dragedArea.touchMove.set(pointer.position, dragedArea.position);
 				
-				dragedArea.position.commit(masterEngine, dragedArea.entity);
+				dragCommit.setContext(dragedArea.position.getContext());
+				dragCommit.lstLinkedHandlers.clear();
+				dragCommit.lstLinkedHandlers.addAll(dragedArea.position.lstLinkedHandlers);
+				dragCommit.set(x, y);
+				dragCommit.commit(masterEngine, dragedArea.entity);
 				dragedArea.touchMove.commit(masterEngine, dragedArea.entity);
 				handled = true;
 				

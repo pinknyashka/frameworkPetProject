@@ -80,7 +80,7 @@ public class SpriteRenderSystem extends RenderSystem {
             RenderItem item = frame.obtainItem();
             item.kind = RenderItem.KIND_SPRITE;
             item.layer = sprite.layer.value;
-            item.receiveShadows = sprite.layer.value > -2.0f;
+            item.receiveShadows = sprite.layer.value > -2.0f && !ownsShadowCaster(sprite);
             item.x = transform.x;
             item.y = transform.y;
             item.z = transform.z;

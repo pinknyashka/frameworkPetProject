@@ -96,6 +96,7 @@ public class ReliefRenderSystem extends RenderSystem {
             RenderItem item = frame.obtainItem();
             item.kind = RenderItem.KIND_RELIEF;
             item.layer = relief.layer.value;
+            item.receiveShadows = relief.layer.value > -2.0f && !ownsShadowCaster(relief);
             item.x = transform.x;
             item.y = transform.y;
             item.z = transform.z;

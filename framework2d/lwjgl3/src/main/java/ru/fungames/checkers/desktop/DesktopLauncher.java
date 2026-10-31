@@ -18,6 +18,8 @@ public final class DesktopLauncher {
                 game.screenshotPath = arg.substring("--shot=".length());
             } else if (arg.startsWith("--map=")) {
                 game.mapName = arg.substring("--map=".length());
+            } else if ("--drag-smoke".equals(arg)) {
+                game.dragSmoke = true;
             }
         }
 

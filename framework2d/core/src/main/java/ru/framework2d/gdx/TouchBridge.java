@@ -1,6 +1,5 @@
 package ru.framework2d.gdx;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.utils.Array;
 
@@ -10,7 +9,7 @@ import ru.framework2d.touches.TouchPeriphery;
 /**
  * Bridges libGDX input callbacks into the engine's touch pipeline by building
  * shim MotionEvent objects and feeding them to the TouchPeriphery engine.
- * Coordinates are converted to the engine's y-down screen space.
+ * libGDX and the engine both use y-down screen coordinates, so they pass through unchanged.
  */
 public class TouchBridge extends InputAdapter {
 
@@ -19,10 +18,6 @@ public class TouchBridge extends InputAdapter {
 
     public TouchBridge(TouchPeriphery periphery) {
         this.periphery = periphery;
-    }
-
-    private int screenHeight() {
-        return Gdx.graphics.getHeight();
     }
 
     private int indexOf(int id) {
@@ -46,7 +41,7 @@ public class TouchBridge extends InputAdapter {
     @Override
     public boolean touchDown(int screenX, int screenY, int pointer, int button) {
         if (indexOf(pointer) < 0) {
-            pointers.add(new float[] { screenX, screenHeight() - screenY, pointer });
+            pointers.add(new float[] { screenX, screenY, pointer });
         }
         int index = indexOf(pointer);
         int action = (pointers.size == 1)
@@ -62,7 +57,7 @@ public class TouchBridge extends InputAdapter {
         if (index >= 0) {
             float[] p = pointers.get(index);
             p[0] = screenX;
-            p[1] = screenHeight() - screenY;
+            p[1] = screenY;
         }
         periphery.toHandleEvent(build(MotionEvent.ACTION_MOVE));
         return true;
@@ -76,7 +71,7 @@ public class TouchBridge extends InputAdapter {
         }
         float[] p = pointers.get(index);
         p[0] = screenX;
-        p[1] = screenHeight() - screenY;
+        p[1] = screenY;
 
         int action = (pointers.size == 1)
                 ? MotionEvent.ACTION_UP

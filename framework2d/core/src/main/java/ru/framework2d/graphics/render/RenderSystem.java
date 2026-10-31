@@ -4,6 +4,8 @@ import ru.framework2d.core.Component;
 import ru.framework2d.core.ComponentsHandler;
 import ru.framework2d.core.Engine;
 import ru.framework2d.core.EntityStorage;
+import ru.framework2d.graphics.OutputGraphicalInterface;
+import ru.framework2d.graphics.draw.shadows.OutputGraphicalShadow;
 
 /**
  * Base class for the small systems that collect renderable state. A system is
@@ -23,6 +25,18 @@ public abstract class RenderSystem extends ComponentsHandler {
                 break;
             }
         }
+    }
+
+    protected boolean ownsShadowCaster(OutputGraphicalInterface graphical) {
+        if (graphical.entity == null) {
+            return false;
+        }
+        for (int i = 0; i < graphical.entity.lstGraphicals.size(); i++) {
+            if (graphical.entity.lstGraphicals.get(i) instanceof OutputGraphicalShadow) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public abstract void collect(RenderFrame frame, RenderServices services);

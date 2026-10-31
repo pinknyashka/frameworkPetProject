@@ -12,6 +12,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import ru.framework2d.compat.Canvas;
+import ru.framework2d.compat.MotionEvent;
 import ru.framework2d.core.Engine;
 import ru.framework2d.core.GameCore;
 import ru.framework2d.graphics.GraphicalPeriphery;
@@ -42,6 +43,8 @@ public class CheckersGame extends Game {
 
     /** When set, the frame that ends the smoke run is dumped as PNG to this path. */
     public String screenshotPath;
+
+    public boolean dragSmoke;
 
     @Override
     public void create() {
@@ -76,7 +79,7 @@ public class CheckersGame extends Game {
             return;
         }
         // y-down projection, top-left origin (matches the engine's Android coordinate space).
-        camera.setToOrtho(false, width, height);
+        camera.setToOrtho(true, width, height);
         camera.update();
 
         if (periphery instanceof RenderPeriphery) {
@@ -94,6 +97,9 @@ public class CheckersGame extends Game {
         }
 
         camera.update();
+        if (dragSmoke) {
+            driveDragSmoke();
+        }
         if (periphery instanceof RenderPeriphery) {
             ((RenderPeriphery) periphery).renderFrame(camera.combined);
         } else {
@@ -114,6 +120,23 @@ public class CheckersGame extends Game {
             }
             Gdx.app.log("framework2d", "smoke: rendered " + frames + " frames; exiting;");
             Gdx.app.exit();
+        }
+    }
+
+    private void driveDragSmoke() {
+        if (touch == null) {
+            return;
+        }
+        if (frames == 5) {
+            touch.toHandleEvent(new MotionEvent(MotionEvent.ACTION_DOWN)
+                    .addActionPointer(30, 90, 0));
+        } else if (frames >= 10 && frames <= 30) {
+            float t = (frames - 10) / 20f;
+            touch.toHandleEvent(new MotionEvent(MotionEvent.ACTION_MOVE)
+                    .addActionPointer(30 + 270 * t, 90 + 360 * t, 0));
+        } else if (frames == 35) {
+            touch.toHandleEvent(new MotionEvent(MotionEvent.ACTION_UP)
+                    .addActionPointer(300, 450, 0));
         }
     }
 
