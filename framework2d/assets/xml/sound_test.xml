@@ -62,4 +62,16 @@
         <body roughness = "0.1"/>
     </entity>
 
+    <!-- random pair: the collision sound is picked from a comma-separated list -->
+    <entity name = "random_left">
+        <circle position:x = "-4.5" position:y = "-24" radius = "4" weight = "0.1" movement:currentSpeed = "5"/>
+        <body roughness = "0.1"/>
+        <audio sound = "bump" sounds = "%sbump,H_I4_hit2,H_I5_hit3" playback = "%srandom" volume = "1"/>
+    </entity>
+
+    <entity name = "random_right">
+        <circle position:x = "4.5" position:y = "-24" radius = "4" weight = "0.1" movement:currentSpeed = "5" movement:x = "-1"/>
+        <body roughness = "0.1"/>
+    </entity>
+
 </map>
