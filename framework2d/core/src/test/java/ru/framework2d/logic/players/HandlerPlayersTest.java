@@ -20,6 +20,8 @@ import ru.framework2d.data.DataInterface;
 import ru.framework2d.data.Numeral;
 import ru.framework2d.data.Position3;
 import ru.framework2d.data.Text;
+import ru.framework2d.logic.turns.FlawlessTurnRules;
+import ru.framework2d.logic.turns.SequentialTurnRules;
 import ru.framework2d.testsupport.TestSupport;
 
 /**
@@ -30,7 +32,10 @@ import ru.framework2d.testsupport.TestSupport;
  * then a data object carrying that same context: from the handler's point of view that is
  * indistinguishable from another component committing a field of the same context.
  *
- * No main source was changed, so every odd behaviour below is asserted exactly as it is.
+ * Since phase 1 of plans/turn-based-logics-plan.md the turn passing rule is a separate object
+ * ({@link ru.framework2d.logic.turns.SequentialTurnRules} by default, {@link FlawlessTurnRules}
+ * for the retired "attack until the first mistake" behaviour). A turn only closes when the
+ * player has an open action, i.e. a unit was released first.
  */
 public class HandlerPlayersTest {
 
@@ -77,8 +82,20 @@ public class HandlerPlayersTest {
 		return value;
 	}
 
+	/** The shot: the selected unit of this player is released outside its own touch area. */
+	private void release(LogicalOwnership owned) {
+		players.transferData(owned.entity, signal(new Bool(false), owned.isCurrentlyControlled));
+	}
+
+	/** The logic field reports that no unit is moving any more. */
 	private void endTurn(LogicalPlayer player) {
 		players.transferData(player.entity, signal(new Bool(false), player.isInProgress));
+	}
+
+	/** One whole action of the shipped flow: a unit is released, then everything settles. */
+	private void actAndSettle(LogicalPlayer player) {
+		release(player.lstOwnership.get(0));
+		endTurn(player);
 	}
 
 	private void kill(LogicalOwnership owned) {
@@ -289,15 +306,17 @@ public class HandlerPlayersTest {
 	}
 
 	@Test
-	public void firstTurnEndAfterStartIsSwallowedByTheRespawningPhase() {
+	public void settlingWithoutAnActionDoesNotRotateTheTurn() {
+		// map settling and respawn settling also end the field movement; only a released unit
+		// opens an action, so a bare isInProgress=false must not pass the turn
 		LogicalPlayer p1 = player("p1");
 		LogicalOwnership owned1 = ownershipOf(p1, "man");
 		LogicalPlayer p2 = player("p2");
 		ownershipOf(p2, "man2");
 
 		endTurn(p1);
+		endTurn(p1);
 
-		// respawning starts true, so the first round end only flips it (:307-309)
 		assertTrue(p1.isInProgress.value);
 		assertTrue(p2.isInProgress.value);
 		assertTrue(p1.gotAccess.value);
@@ -306,27 +325,90 @@ public class HandlerPlayersTest {
 	}
 
 	@Test
-	public void secondTurnEndHandsTheTurnToTheNextPlayer() {
+	public void aReleasedUnitAloneDoesNotRotateTheTurn() {
+		// the shot leaves the action open until the field reports that the units settled
+		LogicalPlayer p1 = player("p1");
+		LogicalOwnership owned1 = ownershipOf(p1, "man");
+		LogicalPlayer p2 = player("p2");
+		ownershipOf(p2, "man2");
+
+		release(owned1);
+
+		assertTrue(p1.turnActionPending);
+		assertTrue(p1.isInProgress.value);
+		assertFalse(p1.gotAccess.value);
+		assertFalse(owned1.isControlled.value);
+	}
+
+	@Test
+	public void firstActionOfTheMapHandsTheTurnToTheNextPlayer() {
 		LogicalPlayer p1 = player("p1");
 		LogicalOwnership owned1 = ownershipOf(p1, "man");
 		LogicalPlayer p2 = player("p2");
 		LogicalOwnership owned2 = ownershipOf(p2, "man2");
 		owned2.isControlled.value = false;
 
-		endTurn(p1);
-		endTurn(p1);
+		actAndSettle(p1);
 
 		assertFalse(p1.isInProgress.value);
 		assertFalse(p1.gotAccess.value);
 		assertFalse(owned1.isControlled.value);
 		assertTrue(p2.isInProgress.value);
 		assertTrue(owned2.isControlled.value);
+		assertFalse(p1.turnActionPending);
 		assertEquals(1, p1.numOwnershipAtRoundStart.value);
 		assertEquals(1, p2.numOwnershipAtRoundStart.value);
 	}
 
 	@Test
-	public void flawlessPlayerKeepsTheTurnWhenAnOpponentLostUnits() {
+	public void theActingPlayerCannotActAgainBeforeTheTurnComesBack() {
+		// sequential turns: one action per turn, so after the settle nothing of p1 is clickable
+		// and a second settle without a new release changes nothing
+		LogicalPlayer p1 = player("p1");
+		LogicalOwnership owned1 = ownershipOf(p1, "man");
+		ownershipOf(p1, "man3");
+		LogicalPlayer p2 = player("p2");
+		ownershipOf(p2, "man2");
+
+		actAndSettle(p1);
+
+		assertFalse(owned1.isControlled.value);
+		assertFalse(p1.gotAccess.value);
+		assertFalse(p1.turnActionPending);
+
+		endTurn(p1);
+
+		assertFalse(p1.gotAccess.value);
+		assertFalse(owned1.isControlled.value);
+		assertTrue(p2.isInProgress.value);
+	}
+
+	@Test
+	public void sequentialRulePassesTheTurnAfterAnAttackThatChangedNothing() {
+		// the retired rule kept the turn while the attacker was flawless; the sequential rule
+		// used by default passes the turn after every single action
+		LogicalPlayer p1 = player("p1");
+		LogicalOwnership owned1 = ownershipOf(p1, "man");
+		ownershipOf(p1, "man2");
+		LogicalPlayer p2 = player("p2");
+		ownershipOf(p2, "man3");
+		ownershipOf(p2, "man4");
+
+		endTurn(p1);
+		actAndSettle(p1);
+
+		assertFalse(p1.isInProgress.value);
+		assertFalse(owned1.isControlled.value);
+		assertTrue(p2.isInProgress.value);
+		assertTrue(p2.lstOwnership.get(0).isControlled.value);
+		assertEquals(0, p1.wonRounds.value);
+		assertEquals(0, p2.wonRounds.value);
+	}
+
+	@Test
+	public void flawlessRuleKeepsTheTurnWhenAnOpponentLostUnits() {
+		players.turnRules = new FlawlessTurnRules();
+
 		LogicalPlayer p1 = player("p1");
 		LogicalOwnership owned1 = ownershipOf(p1, "man");
 		ownershipOf(p1, "man2");
@@ -336,25 +418,27 @@ public class HandlerPlayersTest {
 
 		endTurn(p1);
 		kill(lostMan);
-		endTurn(p1);
+		actAndSettle(p1);
 
-		// both sides still hold a unit, so nobody wins: the flawless rule of :272-292 keeps
-		// the turn with p1 because every opponent dropped a unit
+		// both sides still hold a unit, so nobody wins: the retired flawless rule keeps the turn
+		// with p1 because every opponent dropped a unit
 		assertTrue(p1.isInProgress.value);
 		assertTrue(owned1.isControlled.value);
 		assertFalse(p2.isInProgress.value);
 		assertFalse(lostMan.isControlled.value);
 		assertEquals(0, p1.wonRounds.value);
 		assertEquals(0, p2.wonRounds.value);
-		// a finished turn re-baselines on the ACTIVE units (:298-300)
+		// a finished turn re-baselines on the ACTIVE units
 		assertEquals(2, p1.numOwnershipAtRoundStart.value);
 		assertEquals(1, p2.numOwnershipAtRoundStart.value);
 	}
 
 	@Test
-	public void playerWithAChangedUnitCountIsNotFlawlessAndPassesTheTurn() {
-		// linking an ownership refreshes the baseline (:406), so only a unit LOST after
-		// the first round end makes the active count differ from it
+	public void flawlessRuleGivesUpTheTurnWhenTheActingPlayerLostAUnit() {
+		// linking an ownership refreshes the baseline, so only a unit LOST after the first
+		// settle makes the active count differ from it
+		players.turnRules = new FlawlessTurnRules();
+
 		LogicalPlayer p1 = player("p1");
 		LogicalOwnership leftMan = ownershipOf(p1, "man");
 		ownershipOf(p1, "man4");
@@ -364,36 +448,55 @@ public class HandlerPlayersTest {
 
 		endTurn(p1);
 		kill(leftMan);
-		endTurn(p1);
+		actAndSettle(p1);
 
-		// 1 active against a baseline of 2 is not flawless: the plain next player rule of
-		// :295 applies even though isGetTurnIfFlawless is true
+		// 1 active against a baseline of 2 is not flawless: the plain next player rule applies
 		assertFalse(p1.isInProgress.value);
 		assertTrue(p2.isInProgress.value);
 		assertFalse(leftMan.isControlled.value);
 		assertTrue(rightMan.isControlled.value);
 		assertEquals(0, p1.wonRounds.value);
-		// the re-baseline of :298-300 sits inside the whole isGetTurnIfFlawless block,
-		// so it also runs for the non flawless branch
 		assertEquals(1, p1.numOwnershipAtRoundStart.value);
 	}
 
 	@Test
 	public void isGetTurnIfFlawlessFalseAlwaysPassesTheTurn() {
+		players.turnRules = new FlawlessTurnRules();
+
 		LogicalPlayer p1 = player("p1", prop("isGetTurnIfFlawless", new Bool(false)));
 		ownershipOf(p1, "man");
 		ownershipOf(p1, "man3");
 		LogicalPlayer p2 = player("p2", prop("isGetTurnIfFlawless", new Bool(false)));
 		ownershipOf(p2, "man2");
 
-		endTurn(p1);
-		endTurn(p1);
+		actAndSettle(p1);
 
 		assertFalse(p1.isInProgress.value);
 		assertTrue(p2.isInProgress.value);
-		// only the flawless branch re-baselines, so both keep the link time value
+		// every closed turn re-baselines on the active units
 		assertEquals(2, p1.numOwnershipAtRoundStart.value);
 		assertEquals(1, p2.numOwnershipAtRoundStart.value);
+	}
+
+	@Test
+	public void turnRuleIsSelectedFromTheHandlerOptions() {
+		assertTrue(players.turnRules instanceof SequentialTurnRules);
+
+		TagOptions options = new TagOptions("HandlerPlayers");
+		options.lstPropertys.add(new Property("turnRule", new Text("flawless")));
+		players.setOptions(options);
+		assertEquals("flawless", players.turnRules.rulesName());
+
+		options = new TagOptions("HandlerPlayers");
+		options.lstPropertys.add(new Property("turnRule", new Text("sequential")));
+		players.setOptions(options);
+		assertEquals("sequential", players.turnRules.rulesName());
+
+		// an unknown name is reported and the previous rule survives
+		options = new TagOptions("HandlerPlayers");
+		options.lstPropertys.add(new Property("turnRule", new Text("who-knows")));
+		players.setOptions(options);
+		assertEquals("sequential", players.turnRules.rulesName());
 	}
 
 	@Test

@@ -27,6 +27,14 @@ public class LogicalPlayer extends LogicalInterface {
 
 	public Bool isGetTurnIfFlawless = new Bool(true);
 	public Numeral numOwnershipAtRoundStart = new Numeral(0);
+
+	/**
+	 * True while an action of this player is open: set when a controlled unit of this player is
+	 * released (the shot, see the isCurrentlyControlled branch of HandlerPlayers) and cleared when
+	 * the turn closes. Spawn and respawn settling also ends the field movement, so the turn rule
+	 * needs this flag to tell a real action apart from settling (plans/turn-based-logics-plan.md §2).
+	 */
+	public boolean turnActionPending = false;
 	
 	public Bool isWaitForTurnOver = new Bool(true);
 	public Bool isGetTurnIfWon = new Bool(true);
