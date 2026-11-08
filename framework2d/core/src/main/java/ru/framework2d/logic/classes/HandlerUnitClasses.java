@@ -32,6 +32,7 @@ public class HandlerUnitClasses extends ComponentsHandler implements TurnRules {
 	private boolean roundResetPending = false;
 
 	public final ArrayList <UnitClass> activationCandidates = new ArrayList <UnitClass>();
+	private final ArrayList <UnitClass> delayedReturns = new ArrayList <UnitClass>();
 	private HandlerPlayers playersHandler = null;
 
 	@SuppressWarnings("unchecked")
@@ -119,6 +120,7 @@ public class HandlerUnitClasses extends ComponentsHandler implements TurnRules {
 
 	@Override
 	public void onRoundFinished(LogicalPlayer player) {
+		processDelayedReturns();
 		roundResetPending = true;
 
 		for (UnitClass unit : lstUnitClasses) {
@@ -139,6 +141,11 @@ public class HandlerUnitClasses extends ComponentsHandler implements TurnRules {
 		Log.i(LOG_TAG, name + ": class combat state reset after round end"
 				+ (player == null ? "" : " for " + player.name.value)
 				+ "; eligibility reset for " + lstUnitClasses.size() + " unit(s);");
+	}
+
+	@Override
+	public void movementStopped(LogicalPlayer player) {
+		processDelayedReturns();
 	}
 
 	@Override
@@ -490,7 +497,7 @@ public class HandlerUnitClasses extends ComponentsHandler implements TurnRules {
 		spendDurability(unit);
 
 		if (canReturnToDesk(unit)) {
-			returnUnitToDesk(unit);
+			queueDelayedReturn(unit);
 			return;
 		}
 
@@ -507,8 +514,42 @@ public class HandlerUnitClasses extends ComponentsHandler implements TurnRules {
 		return unit.hitsToDestroy.value > 0 && unit.durabilitySpent < unit.hitsToDestroy.value;
 	}
 
+	private void queueDelayedReturn(UnitClass unit) {
+		if (!delayedReturns.contains(unit)) delayedReturns.add(unit);
+
+		unit.destroyed = false;
+		syncOwnershipExist(unit, false);
+		markLogicalUnitOnBoard(unit, false);
+		setControlled(unit, false);
+
+		Log.i(LOG_TAG, name + ": class exit delayed return queued: " + unit.entity.name
+				+ " durability " + unit.durabilitySpent + "/" + unit.hitsToDestroy.value
+				+ "; pending returns=" + delayedReturns.size() + ";");
+	}
+
+	private void processDelayedReturns() {
+		if (delayedReturns.isEmpty()) return;
+
+		refreshCurrentCellsForBoardedUnits();
+
+		ArrayList <UnitClass> returning = new ArrayList <UnitClass>(delayedReturns);
+		delayedReturns.clear();
+
+		for (UnitClass unit : returning) {
+			if (unit == null || unit.destroyed) continue;
+			returnUnitToDesk(unit);
+		}
+	}
+
+	private void refreshCurrentCellsForBoardedUnits() {
+		for (UnitClass unit : lstUnitClasses) {
+			if (unit == null || unit.destroyed || !unit.lastKnownOnBoard) continue;
+			updateCurrentCell(unit);
+		}
+	}
+
 	private void returnUnitToDesk(UnitClass unit) {
-		restoreUnitPosition(unit);
+		CellGrid returnedCell = restoreUnitPosition(unit);
 
 		unit.remainsOnBoard.value = true;
 		unit.lastKnownOnBoard = true;
@@ -527,6 +568,8 @@ public class HandlerUnitClasses extends ComponentsHandler implements TurnRules {
 		}
 
 		Log.i(LOG_TAG, name + ": class unit returned to the desk: " + unit.entity.name
+				+ " to " + (returnedCell == null ? "no cell" : "cell (" + returnedCell.column + ", " + returnedCell.row + ")")
+				+ " pos=(" + unit.position.x.value + ", " + unit.position.y.value + ")"
 				+ " durability " + unit.durabilitySpent + "/" + unit.hitsToDestroy.value + ";");
 	}
 
@@ -584,8 +627,8 @@ public class HandlerUnitClasses extends ComponentsHandler implements TurnRules {
 		unit.hasReturnPosition = true;
 	}
 
-	private void restoreUnitPosition(UnitClass unit) {
-		if (unit == null || unit.entity == null) return;
+	private CellGrid restoreUnitPosition(UnitClass unit) {
+		if (unit == null || unit.entity == null) return null;
 
 		double targetX = unit.hasReturnPosition ? unit.returnX : unit.position.x.value;
 		double targetY = unit.hasReturnPosition ? unit.returnY : unit.position.y.value;
@@ -601,7 +644,10 @@ public class HandlerUnitClasses extends ComponentsHandler implements TurnRules {
 		unit.position.y.value = targetY;
 		unit.position.setAlpha(targetAlpha);
 		applyPositionToEntity(unit.entity, targetX, targetY, targetAlpha);
+		refreshPhysicalOccupiedAreas(unit.entity);
 		unit.position.commit(this, unit.entity);
+
+		return cell;
 	}
 
 	private void applyPositionToEntity(Entity object, double x, double y, double alpha) {
@@ -611,6 +657,16 @@ public class HandlerUnitClasses extends ComponentsHandler implements TurnRules {
 			component.position.x.value = x;
 			component.position.y.value = y;
 			component.position.setAlpha(alpha);
+		}
+	}
+
+	private void refreshPhysicalOccupiedAreas(Entity object) {
+		if (object == null) return;
+
+		for (ru.framework2d.physics.PhysicalInterface physical : object.lstPhysicals) {
+			if (physical instanceof PhysicalShape) {
+				((PhysicalShape) physical).occupiedArea.validateAabb();
+			}
 		}
 	}
 
@@ -657,25 +713,53 @@ public class HandlerUnitClasses extends ComponentsHandler implements TurnRules {
 	private boolean isCellOccupied(UnitClass unit, CellGrid cell) {
 		if (cell == null) return false;
 
+		double halfWidth = cell.width > 0 ? cell.width / 2.0 : 0;
+		double halfHeight = cell.height > 0 ? cell.height / 2.0 : 0;
+		double fallbackRadius = Math.min(halfWidth, halfHeight);
+		double returningRadius = physicalRadius(unit, fallbackRadius);
+
 		for (UnitClass other : lstUnitClasses) {
-			if (other == unit || !other.lastKnownOnBoard || other.destroyed) continue;
-			if (other.cellColumn == cell.column && other.cellRow == cell.row) return true;
+			if (other == unit || other.destroyed) continue;
+			if (!other.lastKnownOnBoard && !other.remainsOnBoard.value) continue;
 
-			double otherX = other.hasReturnPosition ? other.returnX : other.position.x.value;
-			double otherY = other.hasReturnPosition ? other.returnY : other.position.y.value;
-			double halfWidth = cell.width > 0 ? cell.width / 2.0 : 0;
-			double halfHeight = cell.height > 0 ? cell.height / 2.0 : 0;
+			if (other.cellColumn == cell.column && other.cellRow == cell.row
+					&& other.lastKnownOnBoard) {
+				return true;
+			}
 
+			double otherX = other.hasReturnPosition && !other.lastKnownOnBoard
+					? other.returnX : other.position.x.value;
+			double otherY = other.hasReturnPosition && !other.lastKnownOnBoard
+					? other.returnY : other.position.y.value;
+
+			double limit = returningRadius + physicalRadius(other, fallbackRadius);
 			double dx = cell.position.getX() - otherX;
 			double dy = cell.position.getY() - otherY;
 
-			if (halfWidth > 0 && halfHeight > 0
+			if (limit > 0 && dx * dx + dy * dy < limit * limit) {
+				return true;
+			}
+
+			if (other.lastKnownOnBoard && halfWidth > 0 && halfHeight > 0
 					&& Math.abs(dx) < halfWidth && Math.abs(dy) < halfHeight) {
 				return true;
 			}
 		}
 
 		return false;
+	}
+
+	private double physicalRadius(UnitClass unit, double fallbackRadius) {
+		if (unit == null || unit.entity == null) return fallbackRadius;
+
+		for (ru.framework2d.physics.PhysicalInterface physical : unit.entity.lstPhysicals) {
+			if (physical instanceof PhysicalShape) {
+				double radius = ((PhysicalShape) physical).occupiedArea.radius;
+				if (radius > 0) return radius;
+			}
+		}
+
+		return fallbackRadius;
 	}
 
 	private void stopMovement(Entity entity) {

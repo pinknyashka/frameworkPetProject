@@ -406,7 +406,7 @@ public class HandlerUnitClassesTest {
 	}
 
 	@Test
-	public void minigunSurvivableExitReturnsToTheDeskAndCountsAKnock() {
+	public void minigunSurvivableExitWaitsForMovementStoppedBeforeReturningToTheDesk() {
 		LogicalPlayer p1 = player("p1");
 		player("p2");
 
@@ -423,10 +423,17 @@ public class HandlerUnitClassesTest {
 		classes.transferData(gun, signal(new Bool(false), gunClass.remainsOnBoard));
 
 		assertEquals(1, whiteClass.enemiesDestroyed.value);
+		assertFalse(gunClass.remainsOnBoard.value);
+		assertFalse(gunClass.lastKnownOnBoard);
+		assertFalse(gunClass.destroyed);
+		assertEquals(1, gunClass.durabilitySpent);
+		assertFalse(gunOwnership.isExist.value);
+
+		classes.movementStopped(p1);
+
 		assertTrue(gunClass.remainsOnBoard.value);
 		assertTrue(gunClass.lastKnownOnBoard);
 		assertFalse(gunClass.destroyed);
-		assertEquals(1, gunClass.durabilitySpent);
 		assertTrue(gunOwnership.isExist.value);
 	}
 
@@ -466,12 +473,12 @@ public class HandlerUnitClassesTest {
 		UnitClass gunClass = minigun(gun);
 
 		classes.transferData(gun, signal(new Bool(false), gunClass.remainsOnBoard));
-
+		classes.movementStopped(null);
 		assertTrue(gunClass.remainsOnBoard.value);
 		assertEquals(1, gunClass.durabilitySpent);
 
 		classes.transferData(gun, signal(new Bool(false), gunClass.remainsOnBoard));
-
+		classes.movementStopped(null);
 		assertTrue(gunClass.remainsOnBoard.value);
 		assertEquals(2, gunClass.durabilitySpent);
 
@@ -531,6 +538,10 @@ public class HandlerUnitClassesTest {
 			classes.transferData(gun, signal(new Bool(false), gunClass.remainsOnBoard));
 			assertEquals(exit, whiteClass.enemiesDestroyed.value);
 			assertEquals(exit, gunClass.durabilitySpent);
+
+			if (exit < gunClass.hitsToDestroy.value) {
+				classes.movementStopped(p1);
+			}
 		}
 
 		assertFalse(gunClass.remainsOnBoard.value);
@@ -703,6 +714,7 @@ public class HandlerUnitClassesTest {
 		gunClass.position.y.value = 1000;
 
 		classes.transferData(gun, signal(new Bool(false), gunClass.remainsOnBoard));
+		classes.movementStopped(null);
 
 		assertTrue(gunClass.remainsOnBoard.value);
 		assertEquals(0, gunClass.cellColumn);
@@ -737,6 +749,45 @@ public class HandlerUnitClassesTest {
 		occupantClass.lastKnownOnBoard = true;
 
 		classes.transferData(gun, signal(new Bool(false), gunClass.remainsOnBoard));
+		classes.movementStopped(null);
+
+		assertTrue(gunClass.remainsOnBoard.value);
+		assertEquals(1, gunClass.cellColumn);
+		assertEquals(0, gunClass.cellRow);
+		assertEquals(freeCell.position.getX(), gunClass.position.x.value, 0.001);
+		assertEquals(freeCell.position.getY(), gunClass.position.y.value, 0.001);
+	}
+
+	@Test
+	public void survivingDeskExitIgnoresStaleReturnPositionWhenOccupantAlreadyMovedToReturnSpot() {
+		player("p1");
+		player("p2");
+
+		LogicalGrid grid = addGrid(2, 1);
+		CellGrid targetCell = grid.cells[0][0];
+		CellGrid freeCell = grid.cells[1][0];
+
+		Entity gun = new Entity("gun");
+		ownership(gun, "p1");
+		UnitClass gunClass = minigun(gun);
+		setReturnSpot(gunClass, targetCell.position.getX(), targetCell.position.getY());
+		gunClass.position.x.value = 1000;
+		gunClass.position.y.value = 1000;
+
+		Entity occupant = new Entity("occupant");
+		ownership(occupant, "p1");
+		UnitClass occupantClass = infantry(occupant);
+		occupantClass.position.x.value = targetCell.position.getX();
+		occupantClass.position.y.value = targetCell.position.getY();
+		occupantClass.cellColumn = 1;
+		occupantClass.cellRow = 0;
+		occupantClass.lastKnownOnBoard = true;
+		occupantClass.hasReturnPosition = true;
+		occupantClass.returnX = freeCell.position.getX();
+		occupantClass.returnY = freeCell.position.getY();
+
+		classes.transferData(gun, signal(new Bool(false), gunClass.remainsOnBoard));
+		classes.movementStopped(null);
 
 		assertTrue(gunClass.remainsOnBoard.value);
 		assertEquals(1, gunClass.cellColumn);
@@ -765,6 +816,10 @@ public class HandlerUnitClassesTest {
 		gun.addComponent(logicalUnit);
 
 		classes.transferData(gun, signal(new Bool(false), gunClass.remainsOnBoard));
+		assertFalse(gunClass.remainsOnBoard.value);
+		assertFalse(logicalUnit.inField.value);
+
+		classes.movementStopped(null);
 
 		assertTrue(gunClass.remainsOnBoard.value);
 		assertTrue(logicalUnit.inField.value);

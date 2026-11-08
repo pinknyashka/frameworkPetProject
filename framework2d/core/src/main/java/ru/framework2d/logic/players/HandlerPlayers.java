@@ -191,6 +191,8 @@ public class HandlerPlayers extends ComponentsHandler {
 						transfered = true;
 						
 						if (player.isWaitForTurnOver.value && !((Bool) data).value) {
+							turnRules.movementStopped(player);
+
 							/*check win*/
 							if (!pointsAreCounted && player.isLoseRoundIfHaveNoOwnership.value) {
 								

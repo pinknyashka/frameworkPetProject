@@ -4,8 +4,8 @@ package ru.framework2d.logic.classes;
  * Minigun class (plans/logics-plan.md).
  *
  * Destroying two or more enemies grants an additional turn. It survives the
- * first two desk exits and returns to the board each time; the third exit
- * consumes its durability and removes it.
+ * first two desk exits and returns to the board after all pieces stop moving;
+ * the third exit consumes its durability and removes it.
  */
 public class Minigun extends UnitClass {
 

@@ -31,6 +31,13 @@ public interface TurnRules {
 	 */
 	default void onRoundFinished(LogicalPlayer player) { }
 
+	/**
+	 * Called when the logic field reports that the previous action's pieces are no longer moving.
+	 * Rules that delay a unit until the physical settling is over (survivable Minigun returns)
+	 * can finish that work here, before the round settlement decides whether the round ended.
+	 */
+	default void movementStopped(LogicalPlayer player) { }
+
 	/** Short name used in the {@code Logical} turn log lines. */
 	String rulesName();
 }
