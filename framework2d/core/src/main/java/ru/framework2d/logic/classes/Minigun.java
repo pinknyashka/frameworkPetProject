@@ -3,10 +3,9 @@ package ru.framework2d.logic.classes;
 /**
  * Minigun class (plans/logics-plan.md).
  *
- * Destroying two or more enemies grants an additional turn. It absorbs three
- * attacks before it is removed, its hit counter resets when combat restarts,
- * and it returns to the board every time it leaves it (up to
- * {@link #maxRespawns}).
+ * Destroying two or more enemies grants an additional turn. It survives the
+ * first two desk exits and returns to the board each time; the third exit
+ * consumes its durability and removes it.
  */
 public class Minigun extends UnitClass {
 
@@ -21,6 +20,5 @@ public class Minigun extends UnitClass {
 		killsForBonusTurn.value = 2;
 		adjacencyRange.value = 0;
 		hitsToDestroy.value = 3;
-		maxRespawns.value = 3;
 	}
 }

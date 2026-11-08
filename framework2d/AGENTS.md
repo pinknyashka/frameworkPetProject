@@ -253,6 +253,9 @@ Active commands:
 .\gradlew.bat :lwjgl3:build
 .\gradlew.bat :lwjgl3:run --args="--smoke"
 .\gradlew.bat :lwjgl3:run --args="--smoke --map=binding_test"
+.\gradlew.bat :lwjgl3:run --args="--launcher --frames=120 --shot=../build/launcher.png"
+.\gradlew.bat :lwjgl3:run --args="--launcher-select=40 --frames=100 --shot=../build/launcher-maps.png"
+.\gradlew.bat :lwjgl3:run --args="--launcher-select=60:tests:sound_test --frames=240"
 .\gradlew.bat :android:assembleDebug
 ```
 
@@ -261,6 +264,8 @@ Active commands:
 - `:core:lockSelfTest` runs the lock-layer scenarios (shared readers, writer rejection/wait, timeout diagnostics, upgrade rejection, lock order, test-scope isolation). It must print `ALL LOCK TESTS PASSED`.
 - `--smoke` renders 180 frames and exits. A clean exit with no exceptions is the current smoke gate.
 - Use `--map=<name>` to load another map under `assets/xml/`.
+- `--launcher` shows the launcher (New Game / Continue / Tests / About) and builds no engine until a map is chosen; `--smoke`/`--map=` keep the old direct-to-game behavior. `--launcher-select=<frames>[:tests][:<map>]` jumps to the map list (or starts that map) after the given frames, `--launcher-scroll=<pixels>` offsets the list, and `--window=<W>x<H>` resizes the window so the list can be exercised at small sizes. See `plans/launcher-plan.md`.
+- `--shot=<path>` dumps the last rendered frame. `Pixmap.createFromFrameBuffer` returns GL rows bottom-up, so `CheckersGame` flips the pixmap; the PNG matches the window orientation.
 - The desktop module uses `assets/` as its working directory.
 - The legacy `ant build` is not the active path. It compiles the old `src/`/`gen/` tree, hardcodes old SDK paths, and uses Java 1.5. Do not rely on it and do not "fix" it unless the task is explicitly about the legacy shell.
 - The test harness rules, current coverage, and characterization quirks are documented in `plans/tests-plan.md`.

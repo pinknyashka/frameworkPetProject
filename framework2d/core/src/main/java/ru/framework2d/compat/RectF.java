@@ -40,6 +40,10 @@ public class RectF {
         return bottom - top;
     }
 
+    public boolean contains(float x, float y) {
+        return left < right && top < bottom && x >= left && x < right && y >= top && y < bottom;
+    }
+
     /** Transform this rectangle by an affine matrix (result is the axis-aligned bounds). */
     public void transform(Matrix m) {
         float[][] corners = {

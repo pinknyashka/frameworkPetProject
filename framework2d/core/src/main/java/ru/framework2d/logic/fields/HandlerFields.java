@@ -34,13 +34,10 @@ public class HandlerFields extends ComponentsHandler {
 	
 	
 	
-	protected void iterate() {
+    protected void iterate() {
 		
-    	long timerMark2 = System.currentTimeMillis();
-    	
     	handleMoving();
     	
-    	Log.d(LOG_TAG, name + ": step done in "+ (System.currentTimeMillis() - timerMark2) + " ms;");
     	masterEngine.subEngineWorkDone(this);
 	}
 
@@ -73,7 +70,9 @@ public class HandlerFields extends ComponentsHandler {
 							if (unit.inField.value != inField) { //if changed
 								unit.inField.value = inField;
 								
-								Log.d(LOG_TAG, name + ": commit " + unit.entity.name + " to " + inField);
+								Log.i(LOG_TAG, name + ": field state: " + unit.entity.name
+										+ " inField=" + inField
+										+ " pos=(" + unit.position.x.value + ", " + unit.position.y.value + ");");
 								
 								unit.inField.commit(this, unit.entity);
 								if (!unit.inField.value) {
@@ -104,7 +103,9 @@ public class HandlerFields extends ComponentsHandler {
 						boolean inField = !field.checkEscape(unit.position);
 						if (unit.inField.value != inField) { //if changed
 							unit.inField.value = inField;
-							Log.d(LOG_TAG, name + ": commit " + unit.entity.name + " to " + inField);
+							Log.i(LOG_TAG, name + ": field state: " + unit.entity.name
+									+ " inField=" + inField
+									+ " pos=(" + unit.position.x.value + ", " + unit.position.y.value + ");");
 							unit.inField.commit(this, unit.entity);
 							if (!unit.inField.value) {
 								if (field.lstUnitsInField.remove(unit) && field.lstUnitsInField.isEmpty()) {
@@ -160,9 +161,6 @@ public class HandlerFields extends ComponentsHandler {
 
 	@Override
 	public boolean transferData(Entity object, DataInterface data) {
-		Log.d(LOG_TAG, name + ": transfer data " + data.getName() + " in " + object.name);
-		long timerMark1 = System.currentTimeMillis();
-		
 		boolean transfered = false;
 		
 		for (Component component : object.lstLogicals) {
@@ -185,7 +183,6 @@ public class HandlerFields extends ComponentsHandler {
 			}
 		}
 		
-		Log.d(LOG_TAG, name + ": transfer done in "+ (System.currentTimeMillis() - timerMark1) + " ms;");
 		return transfered;
 	}
 

@@ -32,13 +32,15 @@ Current build verification:
 .\gradlew.bat :android:assembleDebug
 ```
 
-Current desktop smoke command:
+Current desktop smoke commands:
 
 ```powershell
 .\gradlew.bat :lwjgl3:run --args="--smoke"
+.\gradlew.bat :lwjgl3:run --args="--launcher --frames=120 --shot=../build/launcher.png"
+.\gradlew.bat :lwjgl3:run --args="--launcher-select=60:tests:sound_test --frames=240"
 ```
 
-The desktop smoke run currently uses `checkers_tree` as the default map and exits after 180 frames.
+The desktop smoke run currently uses `checkers_tree` as the default map and exits after 180 frames. `--launcher` keeps the launcher (New Game / Continue / Tests / About) on screen instead of building the engine; `--launcher-select`, `--launcher-scroll`, and `--window` exercise the launcher screens headlessly. See `plans/launcher-plan.md`.
 
 ## Top level
 
@@ -54,6 +56,7 @@ The desktop smoke run currently uses `checkers_tree` as the default map and exit
 | `gradle/wrapper/gradle-wrapper.properties` | Wrapper configuration, Gradle `8.7`. |
 | `local.properties` | Machine-local Android SDK pointer. Must point `sdk.dir` to a valid Android SDK on the current machine. |
 | `plans/binding-plan.md` | Plan + verification result for the data-binding feature (`<dataName>_binding` map attributes); implemented and smoke-verified, no longer pending. |
+| `plans/launcher-plan.md` | Plan + verification note for the prototype launcher screen (New Game / Continue / Tests / About, scrollable map list), the deferred `GameCore` start, the smoke launcher flags, and the `--shot=` pixmap orientation fix. |
 | `plans/new-subsystem-plan.md` | Runbook for adding a new subsystem via signal fields; verified against the sound subsystem. |
 | `plans/parallel-agents-plan.md` | Design + verification note for the runtime resource locks (`ru.framework2d.core.agents`), source/build claims, integration points, and follow-ups. |
 | `plans/tests-plan.md` | Plan, harness contract, current coverage, and pinned engine quirks for the headless `:core:test` regression suite. |
@@ -81,7 +84,14 @@ The desktop smoke run currently uses `checkers_tree` as the default map and exit
 
 | File | Description |
 |---|---|
-| `CheckersGame.java` | libGDX `Game` runtime bridge. Creates `GameCore`, parses `DEFAULT_MAP = "checkers_tree"`, scans `GameCore.enginesManager.lstEngines` for `GraphicalPeriphery` and `TouchPeriphery`, creates `OrthographicCamera`/`SpriteBatch`/`BitmapFont`/compat `Canvas`, installs `TouchBridge`, and calls `periphery.draw(canvas)` each frame. Supports `--smoke` frame-exit behavior through `exitAfterFrames`. |
+| `CheckersGame.java` | libGDX `Game` runtime bridge. Owns the launcher/game state machine: with `showLauncher` it draws `LauncherScreen` and defers `GameCore` until a map is chosen (`startGame`), otherwise it builds the engine immediately from `DEFAULT_MAP = "checkers_tree"`. Scans `GameCore.enginesManager.lstEngines` for `GraphicalPeriphery` and `TouchPeriphery`, creates `OrthographicCamera`/`SpriteBatch`/`BitmapFont`/compat `Canvas`, installs `TouchBridge`, and calls `periphery.draw(canvas)` each frame. Records the chosen map in the `framework2d` preferences (`lastMap`) for the launcher's Continue button, flips `--shot=` pixmaps so the PNG matches the window, and supports `--smoke` frame-exit behavior through `exitAfterFrames`. `returnToMenu()` is the (not yet wired to UI) engine-teardown path back to the launcher. |
+
+### `core/src/main/java/ru/fungames/checkers/launcher/`
+
+| File | Description |
+|---|---|
+| `LauncherScreen.java` | Prototype preparation screen drawn through the compat `Canvas` (no scene2d, no engine tree yet): Main (`New Game` / `Continue` / `Tests` / `About`), Map list (`New game` and `Test scenarios`, scrollable by drag, tap selects), and About. Reads taps with its own libGDX `InputAdapter` because the engine touch pipeline does not exist at that point. Splits maps into game/test lists, sorts the preferred map first, caches preview bitmaps, and keeps room in each row for the future preview+description. |
+| `MapInfo.java` | Per-map launcher metadata read from the root `<map>` tag of `assets/xml/<name>.xml`: `name`, `preview`, `parallel`, and the `test` bucket (explicit `test="true"` attribute, or the `*_test`/`graphics_*`/`binding_*`/`sound_*` naming convention). |
 
 ### `core/src/main/java/ru/framework2d/gdx/`
 
@@ -419,7 +429,7 @@ These advanced drawing features currently rely on libGDX-backed approximations a
 
 | File | Description |
 |---|---|
-| `DesktopLauncher.java` | Desktop entry point. Creates `Lwjgl3Application` with a `CheckersGame`. Window is 800×600, 60 FPS. Supports `--smoke` by setting `CheckersGame.exitAfterFrames = 180`. |
+| `DesktopLauncher.java` | Desktop entry point. Creates `Lwjgl3Application` with a `CheckersGame`. Window defaults to 600×900 (portrait, `--window=<W>x<H>` overrides it), 60 FPS. Parses `--smoke`/`--frames=` (frame-exit), `--map=` (direct map), `--launcher`/`--launcher-select=<frames>[:tests][:<map>]`/`--launcher-scroll=<pixels>` (launcher flow smoke helpers), and `--drag-smoke`. |
 
 ## `android/` — Android module
 

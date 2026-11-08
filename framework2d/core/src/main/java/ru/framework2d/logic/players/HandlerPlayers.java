@@ -57,15 +57,11 @@ public class HandlerPlayers extends ComponentsHandler {
 	
 	@Override
 	public boolean transferData(Entity object, DataInterface data) {
-		
-		Log.d(LOG_TAG, name + ": transfer data " + data.getName() 
-				+ "<" + data.getContext().name + "> in " + object.name);
+		if (object == null || data == null || data.getContext() == null) return false;
 		
 		boolean transfered = false;
 		boolean controlPassed = false;
 		boolean pointsAreCounted = false;
-		
-		long timerMark1 = System.currentTimeMillis();
 		
 		for (Component component : object.lstLogicals) {
 			
@@ -92,9 +88,20 @@ public class HandlerPlayers extends ComponentsHandler {
 							
 							if (ownership.isExist.value) {
 								if (!owner.lstActiveOwnership.contains(ownership)) owner.lstActiveOwnership.add(ownership);
+
+								if (!owner.gotControllingOwnership.value && !owner.lstActiveOwnership.isEmpty()) {
+									Log.d(LOG_TAG, name + ": change " + owner.name + ".gotControllingOwnership to true;");
+									owner.gotControllingOwnership.value = true;
+									owner.gotControllingOwnership.commit(this, owner.entity);
+								}
+
+								if (owner.isInProgress.value) {
+									setControlled(ownership, true);
+								}
 							} 
 							else {
 								owner.lstActiveOwnership.remove(ownership);
+								setControlled(ownership, false);
 							}
 							
 							if (!ownership.owner.isWaitForTurnOver.value) {
@@ -124,19 +131,20 @@ public class HandlerPlayers extends ComponentsHandler {
 						else if (data.getContext() == ownership.isCurrentlyControlled.getContext()) {
 							
 							transfered = true;
-							long timerMark2 = System.currentTimeMillis();
 							
 							if (!((Bool) data).value) {
 								
 								ownership.owner.turnActionPending = true;
-								Log.i(LOG_TAG, name + ": turn: " + ownership.owner.name.value 
-										+ " action pending (unit " + ownership.entity.name + " released);");
+								Log.i(LOG_TAG, name + ": turn: " + ownership.owner.name.value
+										+ " action pending (unit " + ownership.entity.name + " released; active ownership "
+										+ ownership.owner.lstActiveOwnership.size() + "/"
+										+ ownership.owner.lstOwnership.size() + "; wait for turn over "
+										+ ownership.owner.isWaitForTurnOver.value + ");");
 								
 								ownership.owner.gotAccess.value = false;
 								
 								for (LogicalOwnership ownershipItem : ownership.owner.lstOwnership) {
-									ownershipItem.isControlled.value = false;
-									ownershipItem.isControlled.commit(this, ownershipItem.entity);
+									setControlled(ownershipItem, false);
 								}
 								
 								if (!ownership.owner.isWaitForTurnOver.value) {
@@ -181,7 +189,6 @@ public class HandlerPlayers extends ComponentsHandler {
 					if (data.getContext() == player.isInProgress.getContext()) {
 						
 						transfered = true;
-						long timerMark2 = System.currentTimeMillis();
 						
 						if (player.isWaitForTurnOver.value && !((Bool) data).value) {
 							/*check win*/
@@ -205,6 +212,11 @@ public class HandlerPlayers extends ComponentsHandler {
 										survivedPlayers++;
 									}
 								}
+								
+								Log.i(LOG_TAG, name + ": turn: round settlement after " + player.name.value
+										+ " settled; surviving owners=" + survivedPlayers
+										+ "; winner=" + (survivedPlayers == 1 && winner != null ? winner.name.value : "none")
+										+ "; active ownership " + activeOwnershipSummary() + ";");
 								
 								if (survivedPlayers == 1) { // some player wins
 									
@@ -234,14 +246,9 @@ public class HandlerPlayers extends ComponentsHandler {
 									
 									if (winner.isGetTurnIfWon.value) {
 										controlPassed = true;
-										
-										giveControlToPlayer(winner);
-										turnRules.onTurnStarted(winner);
-										
 									}
 									
 									winner.wonRounds.commit(this, winner.entity);
-									winner.finishedRoundTrigger.commit(this, winner.entity);
 									
 									for (int i = 1; i < lstPlayers.size(); i++) {
 										
@@ -270,19 +277,37 @@ public class HandlerPlayers extends ComponentsHandler {
 										}
 										
 										losingPlayer.wonRounds.commit(this, losingPlayer.entity);
-										losingPlayer.finishedRoundTrigger.commit(this, losingPlayer.entity);
 									}
 									
 									for (LogicalPlayer aPlayer : lstPlayers) {
 										aPlayer.numOwnershipAtRoundStart.value = aPlayer.lstOwnership.size();
 										aPlayer.turnActionPending = false;
 									}
+
+									for (LogicalPlayer aPlayer : lstPlayers) {
+										turnRules.onRoundFinished(aPlayer);
+									}
+
+									winner.finishedRoundTrigger.commit(this, winner.entity);
+
+									for (int i = 1; i < lstPlayers.size(); i++) {
+										
+										LogicalPlayer losingPlayer = lstPlayers.get(
+												(lstPlayers.indexOf(winner) + i) 
+												% lstPlayers.size());
+										
+										losingPlayer.finishedRoundTrigger.commit(this, losingPlayer.entity);
+									}
+
+									if (winner.isGetTurnIfWon.value) {
+										giveControlToPlayer(winner);
+										turnRules.onTurnStarted(winner);
+									}
 								} 
 								else if (survivedPlayers == 0) { //draw
 									
 									for (LogicalPlayer owner : lstPlayers) {
 										owner.wonRounds.commit(this, owner.entity);
-										owner.finishedRoundTrigger.commit(this, owner.entity);
 										
 										for (LogicalOwnership ownershipItem : owner.lstOwnership) {
 											ownershipItem.isOwnerDrawRound.value = true;
@@ -292,11 +317,31 @@ public class HandlerPlayers extends ComponentsHandler {
 										owner.numOwnershipAtRoundStart.value = owner.lstOwnership.size();
 										owner.turnActionPending = false;
 									}
+
+									for (LogicalPlayer aPlayer : lstPlayers) {
+										turnRules.onRoundFinished(aPlayer);
+									}
+
+									for (LogicalPlayer owner : lstPlayers) {
+										owner.finishedRoundTrigger.commit(this, owner.entity);
+									}
+
+									if (!lstPlayers.isEmpty()) {
+										controlPassed = true;
+										LogicalPlayer nextPlayer = nextSequentialPlayer(player);
+										giveControlToPlayer(nextPlayer);
+										turnRules.onTurnStarted(nextPlayer);
+									}
 								}
 							}
 							
 							/*next player turn*/
 							if (player.isInProgress.value && !controlPassed) {
+								Log.i(LOG_TAG, name + ": turn: settle for " + player.name.value
+										+ " (pending=" + player.turnActionPending
+										+ ", inProgress=" + player.isInProgress.value
+										+ ", active ownership " + activeOwnershipSummary() + ");");
+								
 								//the turn rule lives in ru.framework2d.logic.turns (see TurnRules);
 								//only a closed action of this player may rotate the turn, so that
 								//map settling and respawn settling cannot pass the turn
@@ -320,14 +365,10 @@ public class HandlerPlayers extends ComponentsHandler {
 
 							} 
 						}
-						Log.d(LOG_TAG, name + ": player.isInProgress<" + data.getContext().name + ">: " 
-								+ (System.currentTimeMillis() - timerMark2) 
-								+ " ms; player items: " + player.lstOwnership.size() + "; ");
 					}
 				}
 			}
 		} 
-		Log.d(LOG_TAG, name + ": transfer done in " + (System.currentTimeMillis() - timerMark1) + " ms;");
 		return transfered;
 	}
 	private LogicalPlayer nextPlayerByRule(LogicalPlayer justActed) {
@@ -344,12 +385,17 @@ public class HandlerPlayers extends ComponentsHandler {
 	}
 
 	private void giveControlToPlayer(LogicalPlayer player) {
-		Log.i(LOG_TAG, name + ": turn: control given to " + player.name.value + ";");
-		for (LogicalOwnership ownershipItem : player.lstOwnership) {
-			ownershipItem.isControlled.value = true;
-			ownershipItem.isControlled.commit(this, ownershipItem.entity);
-		}
+		if (player == null) return;
+
+		Log.i(LOG_TAG, name + ": turn: control given to " + player.name.value
+				+ " (active ownership " + player.lstActiveOwnership.size() + "/"
+				+ player.lstOwnership.size() + ");");
+		player.gotAccess.value = true;
 		player.isInProgress.value = true;
+
+		for (LogicalOwnership ownershipItem : player.lstOwnership) {
+			setControlled(ownershipItem, ownershipItem.isExist.value);
+		}
 		
 		for (int i = 1; i < lstPlayers.size(); i++) {
 			LogicalPlayer nextPlayer = lstPlayers.get(
@@ -359,13 +405,42 @@ public class HandlerPlayers extends ComponentsHandler {
 				nextPlayer.gotAccess.value = false;
 				nextPlayer.isInProgress.value = false;
 				for (LogicalOwnership ownershipItem : nextPlayer.lstOwnership) {
-					ownershipItem.isControlled.value = false;
-					ownershipItem.isControlled.commit(this, ownershipItem.entity);
+					setControlled(ownershipItem, false);
 				}
 			}
 		}
 	}
 	
+	private String activeOwnershipSummary() {
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < lstPlayers.size(); i++) {
+			if (i > 0) sb.append(", ");
+			LogicalPlayer player = lstPlayers.get(i);
+			sb.append(player.name.value).append(":")
+					.append(player.lstActiveOwnership.size()).append("/")
+					.append(player.lstOwnership.size());
+		}
+		return sb.toString();
+	}
+
+	private LogicalPlayer nextSequentialPlayer(LogicalPlayer player) {
+		int index = lstPlayers.indexOf(player);
+		if (index < 0) index = 0;
+		return lstPlayers.get((index + 1) % lstPlayers.size());
+	}
+
+	private void setControlled(LogicalOwnership ownership, boolean controlled) {
+		if (ownership == null || ownership.owner == null) return;
+		if (ownership.isControlled.value == controlled) return;
+
+		ownership.isControlled.value = controlled;
+		ownership.isControlled.commit(this, ownership.entity);
+		Log.i(LOG_TAG, name + ": control: " + ownership.owner.name.value + "." + ownership.entity.name
+				+ " controlled=" + controlled
+				+ " exists=" + ownership.isExist.value
+				+ " inProgress=" + ownership.owner.isInProgress.value + ";");
+	}
+
 	private boolean otherPlayersGotPoints(LogicalPlayer player) {
 		for (int i = 1; i < lstPlayers.size(); i++) {
 			LogicalPlayer nextPlayer = lstPlayers.get(

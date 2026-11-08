@@ -25,6 +25,12 @@ public interface TurnRules {
 	/** Called for the player that got the turn, after control was given to it. */
 	void onTurnStarted(LogicalPlayer player);
 
+	/**
+	 * Called when the round finished and all players were scored. Rules that keep per-unit combat
+	 * state (Minigun hits, Cavalry pending movement-only follow-up) can reset it here.
+	 */
+	default void onRoundFinished(LogicalPlayer player) { }
+
 	/** Short name used in the {@code Logical} turn log lines. */
 	String rulesName();
 }

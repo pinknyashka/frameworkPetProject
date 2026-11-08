@@ -10,8 +10,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.xmlpull.v1.XmlPullParser;
 
+import ru.framework2d.logic.classes.Cavalry;
 import ru.framework2d.logic.classes.HandlerUnitClasses;
 import ru.framework2d.logic.classes.Infantry;
+import ru.framework2d.logic.classes.Minigun;
 import ru.framework2d.logic.classes.UnitClass;
 import ru.framework2d.logic.fields.LogicalUnit;
 import ru.framework2d.logic.players.HandlerPlayers;
@@ -83,6 +85,18 @@ public class MapParserClassesTest {
 			+ "<ownership ownerName = \"p1\"/>"
 			+ "<infantry/>"
 			+ "</entity>"
+			+ "<entity name = \"horse\" single = \"true\">"
+			+ "<circle position:x = \"0\" position:y = \"0\" radius = \"r\" weight = \"10\"/>"
+			+ "<unit fieldName = \"board\"/>"
+			+ "<ownership ownerName = \"p1\"/>"
+			+ "<cavalry/>"
+			+ "</entity>"
+			+ "<entity name = \"gun\" single = \"true\">"
+			+ "<circle position:x = \"0\" position:y = \"0\" radius = \"r\" weight = \"10\"/>"
+			+ "<unit fieldName = \"board\"/>"
+			+ "<ownership ownerName = \"p1\"/>"
+			+ "<minigun/>"
+			+ "</entity>"
 			+ "</map>";
 
 	private EntityStorage storage;
@@ -144,6 +158,13 @@ public class MapParserClassesTest {
 		return (HandlerUnitClasses) found;
 	}
 
+	private boolean hasClass(HandlerUnitClasses classes, Class <? extends UnitClass> expected) {
+		for (UnitClass unitClass : classes.lstUnitClasses) {
+			if (expected.isInstance(unitClass)) return true;
+		}
+		return false;
+	}
+
 	private HandlerPlayers playerHandler() {
 		Engine found = findEngine(scheduler, HandlerPlayers.class);
 		if (found == null) throw new AssertionError("no HandlerPlayers in the parsed engine tree");
@@ -165,6 +186,14 @@ public class MapParserClassesTest {
 
 		assertTrue(component instanceof Infantry);
 		assertTrue(classHandler().lstUnitClasses.contains(component));
+	}
+
+	@Test
+	public void phase3TagsCreateCavalryAndMinigunComponents() {
+		HandlerUnitClasses classes = classHandler();
+
+		assertTrue(hasClass(classes, Cavalry.class));
+		assertTrue(hasClass(classes, Minigun.class));
 	}
 
 	@Test

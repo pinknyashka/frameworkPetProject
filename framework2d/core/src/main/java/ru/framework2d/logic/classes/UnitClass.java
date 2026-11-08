@@ -15,6 +15,10 @@ import ru.framework2d.logic.LogicalInterface;
  * passes to the opponent). This component only carries the configuration, the
  * inbound signals and the bookkeeping a future turn handler may read and write.
  *
+ * Durability is consumed by desk exits, not by contacts or hits. If the unit
+ * leaves the desk while durability remains, the handler restores it to the
+ * position it had before the hit, or to the nearest free cell if needed.
+ *
  * Communication follows the engine convention: a producer commits one of the
  * {@link Trigger} signals below; the handler reacts to the commit by context
  * identity. The action metadata ({@link #didAttack}, {@link #enemiesDestroyed},
@@ -28,11 +32,8 @@ public abstract class UnitClass extends LogicalInterface {
 	/** Enemies destroyed in a single action that grant this unit a bonus turn. */
 	public Numeral killsForBonusTurn = new Numeral(0);
 
-	/** Separate attacks needed to remove this unit (armor). Infantry/Cavalry 1, Minigun 3. */
+	/** Separate desk exits needed to remove this unit. Infantry/Cavalry 1, Minigun 3. */
 	public Numeral hitsToDestroy = new Numeral(1);
-
-	/** How many times this unit returns to the board after leaving it (Minigun only). */
-	public Numeral maxRespawns = new Numeral(0);
 
 	/**
 	 * Chebyshev cell distance from the acting unit's start cell inside which a
@@ -71,11 +72,26 @@ public abstract class UnitClass extends LogicalInterface {
 	public int actionStartColumn = 0;
 	public int actionStartRow = 0;
 
-	/** Attacks absorbed so far; removed at {@link #hitsToDestroy}. */
-	public int hitsTaken = 0;
+	/** Desk exits already spent from the current durability. */
+	public int durabilitySpent = 0;
+
+	/** Position the unit should return to if it leaves the desk with durability left. */
+	public double returnX = 0;
+	public double returnY = 0;
+	public double returnAlpha = 0;
+	public boolean hasReturnPosition = false;
+
+	/** True once the current desk exit has been resolved for the active action. */
+	public boolean exitProcessedThisAction = false;
 
 	/** True once durability is exhausted. */
 	public boolean destroyed = false;
+
+	/** True if the current action contacted somebody (Cavalry movement-only check). */
+	public boolean contactedThisAction = false;
+
+	/** Handler-local copy of the last board state, useful because field commits mutate the Bool. */
+	public boolean lastKnownOnBoard = true;
 
 	// ---- outputs the turn system reads --------------------------------------
 
@@ -99,8 +115,12 @@ public abstract class UnitClass extends LogicalInterface {
 	}
 
 	public void resetCombatDamage() {
-		hitsTaken = 0;
+		durabilitySpent = 0;
+		exitProcessedThisAction = false;
+		hasReturnPosition = false;
 		destroyed = false;
+		contactedThisAction = false;
+		movementOnlyNextAction = false;
 	}
 
 	public void clearActivationCandidates() {

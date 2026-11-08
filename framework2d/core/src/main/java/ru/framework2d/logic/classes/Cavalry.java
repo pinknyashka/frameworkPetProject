@@ -21,6 +21,5 @@ public class Cavalry extends UnitClass {
 		killsForBonusTurn.value = 3;
 		adjacencyRange.value = 0;
 		hitsToDestroy.value = 1;
-		maxRespawns.value = 0;
 	}
 }

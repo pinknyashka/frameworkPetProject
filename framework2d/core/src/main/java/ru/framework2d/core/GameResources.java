@@ -107,7 +107,7 @@ public class GameResources {
             return fromExternal;
         }
 
-        Log.w(LOG_TAG, "Searching for image " + imageName + " in local resources;");
+        Log.d(LOG_TAG, "Searching for image " + imageName + " in local resources;");
         return getImageFromLocalRes(imageName);
     }
 

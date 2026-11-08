@@ -50,6 +50,7 @@ public class HandlerRespawns extends ComponentsHandler {
 		long timerMark1 = System.currentTimeMillis();
 		
 		boolean transfered = false;
+		boolean processedTriggerOnObject = false;
 		
 		for (Component reflection : object.lstLogicals) {
 			if (reflection instanceof LogicalRespawn) {
@@ -68,6 +69,7 @@ public class HandlerRespawns extends ComponentsHandler {
 				else if (data instanceof Trigger) {
 					if (data.getContext() == respawn.respawningTrigger.getContext()) {
 						transfered = true;
+						processedTriggerOnObject = true;
 						respawn.position.set(respawn.respawningPosition);
 						respawn.position.commit(this, respawn.entity);
 						Log.d(LOG_TAG, name + ": respawning trigger<" + data.getContext().name + "> switched; ");
@@ -81,6 +83,7 @@ public class HandlerRespawns extends ComponentsHandler {
 				if (data instanceof Trigger) {
 					if (data.getContext() == respawner.respawningTrigger.getContext()) {
 						transfered = true;
+						processedTriggerOnObject = true;
 						for (LogicalRespawn respawn : respawner.lstRespawns) {
 							respawn.position.set(respawn.respawningPosition);
 							respawn.position.commit(this, respawn.entity);
@@ -92,6 +95,31 @@ public class HandlerRespawns extends ComponentsHandler {
 				
 			}
 		}
+		if (!processedTriggerOnObject && data instanceof Trigger) {
+			for (LogicalRespawner respawner : lstRespawners) {
+				if (data.getContext() == respawner.respawningTrigger.getContext()) {
+					transfered = true;
+					for (LogicalRespawn respawn : respawner.lstRespawns) {
+						respawn.position.set(respawn.respawningPosition);
+						respawn.position.commit(this, respawn.entity);
+						Log.d(LOG_TAG, name + ": respawning " + respawn.entity.name + " switched; ");
+					}
+					Log.d(LOG_TAG, name + ": respawning trigger<" + data.getContext().name + "> switched; ");
+				}
+			}
+
+			if (!transfered) {
+				for (LogicalRespawn respawn : lstRespawns) {
+					if (data.getContext() == respawn.respawningTrigger.getContext()) {
+						transfered = true;
+						respawn.position.set(respawn.respawningPosition);
+						respawn.position.commit(this, respawn.entity);
+						Log.d(LOG_TAG, name + ": respawning trigger<" + data.getContext().name + "> switched; ");
+					}
+				}
+			}
+		}
+
 		Log.d(LOG_TAG, name + ": transfer done in "+ (System.currentTimeMillis() - timerMark1) + " ms;");
 		return transfered;
 	}

@@ -218,19 +218,17 @@ public class DataImplementator {
 			operand = "";
 			return new Numeral(integer); 
 		} catch (NumberFormatException ei) {
-			Log.i(LOG, "it's not an integer: " + operand);
 			try {
 				float fractional = Float.parseFloat(operand);
 				operand = "";
 				return new Fractional(fractional); 
 			} catch (NumberFormatException ef) {
-				Log.i(LOG, "it's not a float: " + operand);
 				try {
 					double doubleFractional = Double.parseDouble(operand);
 					operand = "";
 					return new DoubleFractional(doubleFractional); 
 				} catch (NumberFormatException ed) {
-					Log.i(LOG, "it's not a double: " + operand);
+					Log.d(LOG, "not a numeric operand: " + operand);
 				}
 			}
 		}

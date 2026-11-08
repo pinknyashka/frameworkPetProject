@@ -21,6 +21,5 @@ public class Infantry extends UnitClass {
 		killsForBonusTurn.value = 1;
 		adjacencyRange.value = 1;
 		hitsToDestroy.value = 1;
-		maxRespawns.value = 0;
 	}
 }

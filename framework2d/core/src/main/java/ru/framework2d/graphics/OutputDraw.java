@@ -63,8 +63,6 @@ public class OutputDraw extends Engine implements GraphicalPeriphery {
 		isDrawingProgress = true;
 		
 		try {
-			Log.d(LOG_TAG, "Start draw " + (timerMark - enginesScheduler.mark) + " ms later than call;");
-			
 			graphicalsNum = lstGraphicals.size();
 			
 			for (int graphicalNo = 0; graphicalNo < graphicalsNum; graphicalNo++) {
@@ -73,9 +71,6 @@ public class OutputDraw extends Engine implements GraphicalPeriphery {
 				
 				graphical.draw(c, paint);
 			}
-			
-			Log.d(LOG_TAG, "Over draw; Spent " + (System.currentTimeMillis() - timerMark) 
-							+ " ms for draw " + lstGraphicals.size() + " graphicals;");
 		} finally {
 			canvas = null;
 			isDrawingProgress = false;

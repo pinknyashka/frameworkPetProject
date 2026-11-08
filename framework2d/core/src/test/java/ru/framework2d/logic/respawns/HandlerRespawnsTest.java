@@ -326,6 +326,24 @@ public class HandlerRespawnsTest {
 	}
 
 	@Test
+	public void respawnerTriggerFromAnotherEntityTeleportsEveryOwnedRespawn() {
+		LogicalRespawner white = respawner("white", 0);
+		LogicalRespawn first = respawn("c1", "white");
+		LogicalRespawn second = respawn("c2", "white");
+
+		first.respawningPosition.set(1, 2, 0);
+		second.respawningPosition.set(3, 4, 0);
+
+		Entity player = new Entity("p1");
+
+		assertTrue(respawns.transferData(player, signal(new Trigger(), white.respawningTrigger)));
+		assertEquals(1d, first.position.getX(), 0d);
+		assertEquals(2d, first.position.getY(), 0d);
+		assertEquals(3d, second.position.getX(), 0d);
+		assertEquals(4d, second.position.getY(), 0d);
+	}
+
+	@Test
 	public void boolDataNeverFiresTheRespawnTrigger() {
 		// the respawningTrigger fields are Bool, while the handler matches a Trigger by type
 		LogicalRespawner white = respawner("white", 0);

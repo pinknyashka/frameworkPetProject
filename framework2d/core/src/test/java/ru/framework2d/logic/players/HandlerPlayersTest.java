@@ -20,8 +20,11 @@ import ru.framework2d.data.DataInterface;
 import ru.framework2d.data.Numeral;
 import ru.framework2d.data.Position3;
 import ru.framework2d.data.Text;
+import java.util.ArrayList;
+
 import ru.framework2d.logic.turns.FlawlessTurnRules;
 import ru.framework2d.logic.turns.SequentialTurnRules;
+import ru.framework2d.logic.turns.TurnRules;
 import ru.framework2d.testsupport.TestSupport;
 
 /**
@@ -628,12 +631,15 @@ public class HandlerPlayersTest {
 	}
 
 	@Test
-	public void drawMarksEveryOwnershipAndClearsControllingOwnership() {
+	public void drawRotatesControlAfterRespawningTheDeadOwnership() {
 		LogicalPlayer p1 = player("p1");
 		LogicalOwnership owned1 = ownershipOf(p1, "man");
 		LogicalPlayer p2 = player("p2");
 		LogicalOwnership owned2 = ownershipOf(p2, "man2");
+		owned2.isControlled.value = false;
+		owned2.isExist.value = false;
 
+		release(owned1);
 		kill(owned1);
 		kill(owned2);
 		endTurn(p1);
@@ -643,9 +649,33 @@ public class HandlerPlayersTest {
 		assertFalse(p1.gotControllingOwnership.value);
 		assertFalse(p2.gotControllingOwnership.value);
 		assertEquals(0, p1.wonRounds.value);
-		// a draw sets respawning, so the turn of a drawn round is never rotated
-		assertTrue(p1.isInProgress.value);
+		assertFalse(p1.isInProgress.value);
 		assertTrue(p2.isInProgress.value);
+		assertTrue(p2.gotAccess.value);
+		assertFalse(owned2.isControlled.value);
+
+		players.transferData(owned2.entity, signal(new Bool(true), owned2.isExist));
+
+		assertTrue(owned2.isExist.value);
+		assertTrue(owned2.isControlled.value);
+		assertTrue(p2.gotControllingOwnership.value);
+		assertFalse(p1.gotControllingOwnership.value);
+	}
+
+	@Test
+	public void winningRoundResetsClassRulesBeforeGivingTheNextTurn() {
+		RecordingRules rules = new RecordingRules();
+		players.turnRules = rules;
+
+		LogicalPlayer p1 = player("p1", prop("isGetTurnIfWon", new Bool(true)));
+		ownershipOf(p1, "man");
+		LogicalPlayer p2 = player("p2");
+		kill(ownershipOf(p2, "man2"));
+
+		endTurn(p1);
+
+		assertTrue(p1.isInProgress.value);
+		assertEquals("round:p1, round:p2, turn:p1", String.join(", ", rules.events));
 	}
 
 	@Test
@@ -684,18 +714,31 @@ public class HandlerPlayersTest {
 	public void transferDataRequiresBothAContextAndAnEntity() {
 		LogicalOwnership owned = ownership("man", "p1");
 
-		try {
-			players.transferData(owned.entity, new Bool(false));
-			fail("a data without a context must not reach the handler");
-		} catch (NullPointerException expected) {
-			// HandlerPlayers.java:34-35 dereferences data.getContext() to build the log line
+		assertFalse(players.transferData(owned.entity, new Bool(false)));
+		assertFalse(players.transferData(null, signal(new Bool(false), owned.isExist)));
+	}
+
+	private static class RecordingRules implements TurnRules {
+		private final ArrayList <String> events = new ArrayList <String>();
+
+		@Override
+		public LogicalPlayer keepTurnPlayer(LogicalPlayer justActed, ArrayList <LogicalPlayer> players) {
+			return null;
 		}
 
-		try {
-			players.transferData(null, signal(new Bool(false), owned.isExist));
-			fail("a null entity must not reach the handler");
-		} catch (NullPointerException expected) {
-			// the same log line dereferences object.name
+		@Override
+		public void onTurnStarted(LogicalPlayer player) {
+			events.add("turn:" + player.name.value);
+		}
+
+		@Override
+		public void onRoundFinished(LogicalPlayer player) {
+			events.add("round:" + player.name.value);
+		}
+
+		@Override
+		public String rulesName() {
+			return "recording";
 		}
 	}
 }
