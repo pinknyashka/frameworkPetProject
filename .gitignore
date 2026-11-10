@@ -6,9 +6,10 @@ build/
 local.properties
 .idea/
 *.iml
+.codex/
 
 # Generated Android natives (unpacked by :android:copyAndroidNatives)
-framework2d/android/jniLibs/
+android/jniLibs/
 
 # Working notes
-framework2d/plans/
+plans/
