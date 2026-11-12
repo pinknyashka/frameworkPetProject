@@ -173,7 +173,7 @@
 		    	rotatable = "false" layer = "0" radius = "checkerradius*2" ltransparency = "0.3">
 			<context name = "localPos" value = "shadowAngle"/>
 		</shadow>
-   		<pict radius = "checkerradius" sprite = "firehead_sprite" layer = "2" angle = "3.14" spriteCollumnsNum = "3"/>
+   		<pict radius = "checkerradius" sprite = "infantry_light" layer = "2" angle = "3.14"/>
    		
    		<relief rotatable = "false" radius = "checkerradius+1" layer = "2.3" 
    		    lightmap = "checker_relief_sprite_3" spriteCollumnsNum = "5" spriteRowsNum = "4" ltransparency = "1.0">
@@ -217,7 +217,7 @@
 		    	rotatable = "false" layer = "0" radius = "checkerradius*2" ltransparency = "0.3">
 			<context name = "localPos" value = "shadowAngle"/>
 		</shadow> 
-		<pict radius = "checkerradius" sprite = "bonehead" layer = "2"/>
+		<pict radius = "checkerradius" sprite = "infantry_dark" layer = "2"/>
 		<relief rotatable = "false" posz = "2.0"
 		    radius = "checkerradius+1" layer = "2.3" 
 		    lightmap = "checker_relief_sprite_3" spriteCollumnsNum = "5" spriteRowsNum = "4" ltransparency = "1.0">

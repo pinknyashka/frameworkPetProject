@@ -41,8 +41,8 @@
     </entity>
 
     <entity name = "demo_white" single = "true">
-        <pict radius = "4" spriteName = "firehead_sprite" layer = "2"
-            position:x = "-15" position:y = "0" spriteCollumnsNum = "3"/>
+        <pict radius = "4" spriteName = "infantry_light" layer = "2"
+            position:x = "-15" position:y = "0"/>
         <relief
             position:x = "-15" position:y = "0"
             size:x = "8" size:y = "8" layer = "2.3"
@@ -59,7 +59,7 @@
     </entity>
 
     <entity name = "demo_black" single = "true">
-        <pict radius = "4" spriteName = "bonehead" layer = "2"
+        <pict radius = "4" spriteName = "infantry_dark" layer = "2"
             position:x = "15" position:y = "0"/>
         <relief
             position:x = "15" position:y = "0" position:z = "2"

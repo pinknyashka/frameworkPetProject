@@ -43,7 +43,7 @@
         <shadow position:x = "300" position:y = "300" position:z = "0"
             layer = "5" isRotatable = "false" localTransparency = "0.6"
             geometry:type = "v_cylinder" geometry:radius = "40" geometry:height = "30"/>
-        <pict spriteName = "bonehead" layer = "2"
+        <pict spriteName = "infantry_dark" layer = "2"
             position:x = "300" position:y = "300"
             isCircle = "true" radius = "40"/>
     </entity>
@@ -53,9 +53,9 @@
         <shadow position:x = "470" position:y = "250" position:z = "0"
             layer = "5" isRotatable = "false" localTransparency = "0.6"
             geometry:type = "block" geometry:width = "80" geometry:depth = "80" geometry:height = "30"/>
-        <pict spriteName = "firehead_sprite" layer = "2"
+        <pict spriteName = "infantry_light" layer = "2"
             position:x = "470" position:y = "250"
-            size:x = "80" size:y = "80" spriteCollumnsNum = "3"/>
+            size:x = "80" size:y = "80"/>
     </entity>
 
     <!-- caster 3: taller and further v_cylinder -> much longer shadow
@@ -64,7 +64,7 @@
         <shadow position:x = "300" position:y = "500" position:z = "0"
             layer = "5" isRotatable = "false" localTransparency = "0.6"
             geometry:type = "v_cylinder" geometry:radius = "30" geometry:height = "60"/>
-        <pict spriteName = "bonehead" layer = "2"
+        <pict spriteName = "infantry_dark" layer = "2"
             position:x = "300" position:y = "500"
             isCircle = "true" radius = "30"/>
     </entity>
@@ -74,7 +74,7 @@
         <shadow position:x = "480" position:y = "680" position:z = "0"
             layer = "5" isRotatable = "false" localTransparency = "0.6"
             geometry:type = "block" geometry:width = "60" geometry:depth = "100" geometry:height = "10"/>
-        <pict spriteName = "bonehead" layer = "2"
+        <pict spriteName = "infantry_dark" layer = "2"
             position:x = "480" position:y = "680"
             size:x = "60" size:y = "100"/>
     </entity>

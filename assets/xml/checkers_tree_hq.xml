@@ -249,7 +249,7 @@
  				<shadow position:z = "0" layer = "1.9" opacity = "0.6" softness = "10.0"
  				    geometry:type = "v_cylinder" geometry:radius = "4" geometry:height = "2" castShadows = "true"/>
  	
- 		   		<pict radius = "4" spriteName = "firehead_sprite" layer = "2" position:alpha = "3.14" spriteCollumnsNum = "3"/>
+ 		   		<pict radius = "4" spriteName = "infantry_light" layer = "2" position:alpha = "3.14"/>
 		   		
 		   		<relief 
 		   		    size:x = "8" size:y = "8" 
@@ -328,7 +328,7 @@
  				<shadow position:z = "0" layer = "1.9" opacity = "0.6" softness = "10.0"
  				    geometry:type = "v_cylinder" geometry:radius = "4" geometry:height = "2" castShadows = "true"/>
  	
- 				<pict radius = "4" spriteName = "bonehead" layer = "2"/>
+ 				<pict radius = "4" spriteName = "infantry_dark" layer = "2"/>
 				
 				<relief 
 				    position:z = "2.0" 

@@ -483,10 +483,8 @@ Game images copied from old drawable resources so they can be loaded by libGDX `
 |---|---|
 | `blackblock.png` | Static block barrier texture. |
 | `board.png` | Checkerboard background. |
-| `bonehead.png` | Piece variant sprite. |
 | `checker_preview.png` | Map preview thumbnail. |
 | `checker_relief_sprite.png` | Relief sprite. |
-| `firehead_sprite.png` | Piece variant sprite with frame grid. |
 | `image_not_found.png` | Fallback image. |
 | `label.png` | Text label background. |
 | `no_data.png` | Placeholder for missing data/preview. |

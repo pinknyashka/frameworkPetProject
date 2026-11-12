@@ -32,12 +32,12 @@
     </entity>
 
     <entity name = "red" single = "true">
-        <pict radius = "10" spriteName = "firehead_sprite" layer = "2"
-            position:x = "-20" position:y = "0" spriteCollumnsNum = "3"/>
+        <pict radius = "10" spriteName = "infantry_light" layer = "2"
+            position:x = "-20" position:y = "0"/>
     </entity>
 
     <entity name = "dark" single = "true">
-        <pict radius = "10" spriteName = "bonehead" layer = "2"
+        <pict radius = "10" spriteName = "infantry_dark" layer = "2"
             position:x = "20" position:y = "0"/>
     </entity>
 

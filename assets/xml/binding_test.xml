@@ -287,7 +287,7 @@
 				
 				<!-- graphical components -->
 
-		   		<pict radius = "4" radius_binding = "$player.OutputGraphicalSprite.radius*2" spriteName = "firehead_sprite" layer = "2" position:alpha = "3.14" spriteCollumnsNum = "3"/>
+		   		<pict radius = "4" radius_binding = "$player.OutputGraphicalSprite.radius*2" spriteName = "infantry_light" layer = "2" position:alpha = "3.14"/>
 		   		
 		   		<relief 
 		   		    size:x = "8" size:y = "8" 
@@ -361,7 +361,7 @@
 				
 				<!-- graphical components -->
 	
-				<pict radius = "4" spriteName = "bonehead" layer = "2"/>
+				<pict radius = "4" spriteName = "infantry_dark" layer = "2"/>
 				
 				<relief 
 				    position:z = "2.0" 
