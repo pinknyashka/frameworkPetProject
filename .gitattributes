@@ -1,0 +1,18 @@
+* text=auto eol=lf
+
+# Windows batch files stay CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary assets are never converted.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.jar binary
+*.ogg binary
+*.wav binary
+*.mp3 binary
+*.apk binary
+*.zip binary

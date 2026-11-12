@@ -3,6 +3,7 @@ package ru.fungames.checkers.launcher;
 import java.util.ArrayList;
 
 import com.badlogic.gdx.InputAdapter;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.utils.ObjectMap;
 
 import ru.framework2d.compat.Bitmap;
@@ -16,7 +17,7 @@ import ru.framework2d.core.GameResources;
 /**
  * Prototype launcher: a customizable preparation screen shown before the engine tree is built.
  *
- * MAIN  - New Game / Continue / Tests / About buttons.
+ * MAIN  - game logo over the New Game / Continue / Tests / About buttons.
  * MAPS  - scrollable list of maps (game maps or test scenarios). A list entry is a plain
  *         button today; full preview + description comes later, so the entry layout keeps
  *         room for it.
@@ -38,9 +39,43 @@ public class LauncherScreen extends InputAdapter {
     private static final int BUTTON_BACK = 5;
     private static final int BUTTON_TOGGLE_LIST = 6;
 
+    private static final int BUTTON_NONE = -1;
+
     private static final float MAP_ITEM_HEIGHT = 108f;
     private static final float THUMBNAIL_SIZE = 84f;
     private static final float TAP_SLOP = 12f;
+
+    private static final int BUTTON_SRC_X = 135;
+    private static final int BUTTON_SRC_Y = 240;
+    private static final int BUTTON_SRC_WIDTH = 1650;
+    private static final int BUTTON_SRC_HEIGHT = 630;
+    private static final int BUTTON_SRC_SLICE = 190;
+
+    /**
+     * The button art is a carved plank: a smooth band between two decorative carve rows carries
+     * the label. Measuring the art, the band runs over the middle 0.30..0.65 of the nine-slice
+     * source rect, so the label must sit at its centre, not at the button's geometric centre.
+     * drawNineSlice scales every source region proportionally, so that fraction of the source
+     * rect is the same fraction of any drawn button.
+     */
+    private static final float BUTTON_FIELD_CENTER_Y = 0.47f;
+
+    /** Logo from art/Logo-checkers.png, keyed and trimmed by art/PrepareLogo.java. */
+    private static final String LOGO_IMAGE = "checkers_logo.png";
+    private static final String FALLBACK_TITLE = "framework2d checkers";
+    private static final float LOGO_TOP = 0.01f;
+    private static final float LOGO_MAX_WIDTH_RATIO = 0.558f;
+    private static final float LOGO_MAX_HEIGHT_RATIO = 0.288f;
+
+    // Shared with the main-screen layout of art/PrepareLogo.java preview; keep both in sync.
+    private static final int MAIN_BUTTON_COUNT = 4;
+    private static final float MAIN_BUTTON_WIDTH_RATIO = 0.38f;
+    private static final float MAIN_MIN_BUTTON_HEIGHT = 30f;
+    private static final float MAIN_STACK_TOP = 0.34f;
+    private static final float MAIN_STACK_BOTTOM = 0.90f;
+
+    private static final int BUTTON_TEXT_COLOR = Color.rgb(55, 30, 16);
+    private static final int BUTTON_DISABLED_TEXT_COLOR = Color.argb(190, 55, 30, 16);
 
     public interface MapChooser {
         void onMapChosen(String mapName);
@@ -53,6 +88,22 @@ public class LauncherScreen extends InputAdapter {
     private final ArrayList<MapInfo> testMaps = new ArrayList<MapInfo>();
     private final ObjectMap<String, Bitmap> previewCache = new ObjectMap<String, Bitmap>();
     private Bitmap noPreviewPlaceholder;
+    private Bitmap mainBackground;
+    private boolean mainBackgroundLoadAttempted;
+    private final Rect mainBackgroundSrc = new Rect();
+    private final RectF mainBackgroundDst = new RectF();
+
+    private Bitmap logo;
+    private boolean logoLoadAttempted;
+    private final Rect logoSrc = new Rect();
+    private final RectF logoDst = new RectF();
+
+    private Bitmap buttonUnpressed;
+    private Bitmap buttonPressed;
+    private boolean buttonImagesLoadAttempted;
+    private int pressedButtonId = BUTTON_NONE;
+    private final Rect nineSrc = new Rect();
+    private final RectF nineDst = new RectF();
 
     private int screen = SCREEN_MAIN;
     private boolean showingTestMaps;
@@ -76,6 +127,8 @@ public class LauncherScreen extends InputAdapter {
     private final Paint fillPaint = new Paint();
     private final Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint smallPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint imagePaint = new Paint();
+    private final Paint disabledImagePaint = new Paint();
 
     private int frames;
     private int autoSelectMapAfterFrames;
@@ -96,6 +149,8 @@ public class LauncherScreen extends InputAdapter {
         textPaint.setTextSize(24f);
         smallPaint.setColor(Color.LTGRAY);
         smallPaint.setTextSize(14f);
+        imagePaint.setColor(Color.WHITE);
+        disabledImagePaint.setColor(Color.argb(160, 255, 255, 255));
     }
 
     // ------------------------------------------------------------------ data
@@ -177,6 +232,7 @@ public class LauncherScreen extends InputAdapter {
             primaryX = screenX;
             primaryY = screenY;
             dragDistance = 0f;
+            pressedButtonId = findButtonId(screenX, screenY);
         }
         return true;
     }
@@ -187,6 +243,11 @@ public class LauncherScreen extends InputAdapter {
             return true;
         }
         dragDistance += Math.abs(screenY - primaryY) + Math.abs(screenX - primaryX);
+        if (dragDistance <= TAP_SLOP) {
+            pressedButtonId = findButtonId(screenX, screenY);
+        } else {
+            pressedButtonId = BUTTON_NONE;
+        }
         scrollOffset -= (screenY - primaryY);
         clampScroll();
         primaryX = screenX;
@@ -203,6 +264,7 @@ public class LauncherScreen extends InputAdapter {
         if (dragDistance <= TAP_SLOP) {
             handleTap(screenX, screenY);
         }
+        pressedButtonId = BUTTON_NONE;
         return true;
     }
 
@@ -210,6 +272,7 @@ public class LauncherScreen extends InputAdapter {
     public boolean touchCancelled(int screenX, int screenY, int pointer, int button) {
         if (pointer == primaryPointer) {
             primaryPointer = -1;
+            pressedButtonId = BUTTON_NONE;
         }
         return true;
     }
@@ -222,6 +285,15 @@ public class LauncherScreen extends InputAdapter {
             return true;
         }
         return false;
+    }
+
+    private int findButtonId(float x, float y) {
+        for (int i = 0; i < frameButtonRects.size(); i++) {
+            if (frameButtonRects.get(i).contains(x, y)) {
+                return frameButtonIds.get(i);
+            }
+        }
+        return BUTTON_NONE;
     }
 
     private void handleTap(float x, float y) {
@@ -344,22 +416,120 @@ public class LauncherScreen extends InputAdapter {
     }
 
     private void drawMain(Canvas canvas, float width, float height, float margin, float buttonWidth) {
-        drawTitle(canvas, "framework2d checkers", width, height * 0.16f, 30f, Color.WHITE);
-        float x = margin;
-        float y = height * 0.28f;
-        float step = height * 0.095f;
-        button(canvas, x, y, buttonWidth, step, "New Game", BUTTON_NEW_GAME, true);
-        y += step * 1.2f;
-        button(canvas, x, y, buttonWidth, step, continueLabel(), BUTTON_CONTINUE, lastPlayedMap != null);
-        y += step * 1.2f;
-        button(canvas, x, y, buttonWidth, step, "Tests", BUTTON_TESTS, true);
-        y += step * 1.2f;
-        button(canvas, x, y, buttonWidth, step, "About", BUTTON_ABOUT, true);
-        drawText(canvas, smallPaint, "launcher prototype", width / 2f, height * 0.92f, true);
+        drawMainBackground(canvas, width, height);
+        float logoBottom = drawLogo(canvas, width, height);
+
+        // Main labels are short, so keep the art close to its original aspect and make the
+        // buttons wide only enough for the carved text area. If the window is short, scale the
+        // whole button stack down rather than stretching a button out of proportion, and always
+        // start it under the logo so the two never overlap on a small window.
+        float aspect = BUTTON_SRC_WIDTH / (float) BUTTON_SRC_HEIGHT;
+        float desiredWidth = Math.min(buttonWidth, width * MAIN_BUTTON_WIDTH_RATIO);
+        float desiredHeight = desiredWidth / aspect;
+        float gap = Math.max(8f, desiredHeight * 0.12f);
+        float stackBottom = height * MAIN_STACK_BOTTOM;
+        float stackTop = Math.max(logoBottom + gap, height * MAIN_STACK_TOP);
+        float mainButtonHeight = Math.max(MAIN_MIN_BUTTON_HEIGHT, Math.min(desiredHeight,
+                (stackBottom - stackTop - (MAIN_BUTTON_COUNT - 1) * gap) / MAIN_BUTTON_COUNT));
+        float mainButtonWidth = Math.min(desiredWidth, mainButtonHeight * aspect);
+        gap = Math.max(8f, mainButtonHeight * 0.12f);
+        float mainTextSize = Math.min(26f, mainButtonHeight * 0.34f);
+        float x = (width - mainButtonWidth) / 2f;
+        float y = Math.min(stackTop, stackBottom - MAIN_BUTTON_COUNT * mainButtonHeight
+                - (MAIN_BUTTON_COUNT - 1) * gap);
+        button(canvas, x, y, mainButtonWidth, mainButtonHeight, "New Game", BUTTON_NEW_GAME, true,
+                mainTextSize);
+        y += mainButtonHeight + gap;
+        button(canvas, x, y, mainButtonWidth, mainButtonHeight, continueLabel(), BUTTON_CONTINUE,
+                lastPlayedMap != null, mainTextSize);
+        y += mainButtonHeight + gap;
+        button(canvas, x, y, mainButtonWidth, mainButtonHeight, "Tests", BUTTON_TESTS, true,
+                mainTextSize);
+        y += mainButtonHeight + gap;
+        button(canvas, x, y, mainButtonWidth, mainButtonHeight, "About", BUTTON_ABOUT, true,
+                mainTextSize);
+        drawText(canvas, smallPaint, footerLabel(width), width / 2f, height * 0.94f, true);
+    }
+
+    private String footerLabel(float width) {
+        if (lastPlayedMap == null) {
+            return "launcher prototype";
+        }
+        String footer = "last map: " + lastPlayedMap;
+        String full = "launcher prototype - " + footer;
+        return smallPaint.measureText(full) * 1.25f <= width - 24f ? full : footer;
+    }
+
+    private void drawMainBackground(Canvas canvas, float width, float height) {
+        if (!mainBackgroundLoadAttempted) {
+            mainBackgroundLoadAttempted = true;
+            mainBackground = resources.getImageFromLocalRes("main.png");
+            if (mainBackground != null && mainBackground.texture != null) {
+                mainBackground.texture.setFilter(Texture.TextureFilter.Linear,
+                        Texture.TextureFilter.Linear);
+            }
+        }
+        if (mainBackground == null || mainBackground.texture == null) {
+            return;
+        }
+
+        int bitmapWidth = mainBackground.getWidth();
+        int bitmapHeight = mainBackground.getHeight();
+        if (bitmapWidth <= 0 || bitmapHeight <= 0) {
+            return;
+        }
+
+        float scale = Math.max(width / (float) bitmapWidth, height / (float) bitmapHeight);
+        float scaledWidth = bitmapWidth * scale;
+        float scaledHeight = bitmapHeight * scale;
+
+        mainBackgroundSrc.set(0, 0, bitmapWidth, bitmapHeight);
+        mainBackgroundDst.set((width - scaledWidth) / 2f, (height - scaledHeight) / 2f,
+                (width + scaledWidth) / 2f, (height + scaledHeight) / 2f);
+        canvas.drawBitmap(mainBackground, mainBackgroundSrc, mainBackgroundDst, imagePaint);
+    }
+
+    /**
+     * The logo takes the place of the plain title label. It keeps the artwork aspect, is never
+     * upscaled past its own pixels, and is capped well below the button stack, so the grain of the
+     * checkers stays readable and the characters on the menu background stay visible around it.
+     *
+     * @return the bottom edge of the logo; the button stack starts below it
+     */
+    private float drawLogo(Canvas canvas, float width, float height) {
+        loadLogoIfNeeded();
+        // GameResources answers a missing file with a 1x1 placeholder instead of null.
+        if (logo == null || logo.texture == null || logo.getWidth() <= 1 || logo.getHeight() <= 1) {
+            drawTitle(canvas, FALLBACK_TITLE, width, height * 0.16f, 30f, Color.WHITE);
+            return height * 0.16f;
+        }
+
+        float scale = Math.min(Math.min(width * LOGO_MAX_WIDTH_RATIO, logo.getWidth())
+                / (float) logo.getWidth(), height * LOGO_MAX_HEIGHT_RATIO
+                / (float) logo.getHeight());
+        float logoWidth = logo.getWidth() * scale;
+        float logoHeight = logo.getHeight() * scale;
+        float top = height * LOGO_TOP;
+
+        logoSrc.set(0, 0, logo.getWidth(), logo.getHeight());
+        logoDst.set((width - logoWidth) / 2f, top, (width + logoWidth) / 2f, top + logoHeight);
+        canvas.drawBitmap(logo, logoSrc, logoDst, imagePaint);
+        return top + logoHeight;
+    }
+
+    private void loadLogoIfNeeded() {
+        if (logoLoadAttempted) {
+            return;
+        }
+        logoLoadAttempted = true;
+        logo = resources.getImageFromLocalRes(LOGO_IMAGE);
+        if (logo != null && logo.texture != null) {
+            logo.texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        }
     }
 
     private String continueLabel() {
-        return lastPlayedMap == null ? "Continue" : "Continue: " + lastPlayedMap;
+        return "Continue";
     }
 
     private void drawAbout(Canvas canvas, float width, float height, float margin, float buttonWidth) {
@@ -477,32 +647,111 @@ public class LauncherScreen extends InputAdapter {
     // --------------------------------------------------------------- widgets
 
     private void backButton(Canvas canvas) {
-        fillPaint.setColor(Color.argb(255, 60, 68, 82));
-        canvas.drawRect(12f, 12f, 112f, 52f, fillPaint);
-        textPaint.setTextSize(18f);
-        textPaint.setColor(Color.WHITE);
-        drawText(canvas, textPaint, "< Back", 24f, 38f, false);
-        textPaint.setTextSize(24f);
+        button(canvas, 12f, 12f, 100f, 40f, "< Back", BUTTON_BACK, true);
         backButton.set(12f, 12f, 112f, 52f);
     }
 
     private float button(Canvas canvas, float x, float y, float width, float height,
             String label, int id, boolean enabled) {
-        fillPaint.setColor(enabled ? Color.argb(255, 70, 100, 160) : Color.argb(120, 60, 66, 78));
-        canvas.drawRect(x, y, x + width, y + height, fillPaint);
-        float size = height * 0.42f;
+        return button(canvas, x, y, width, height, label, id, enabled, height * 0.42f);
+    }
+
+    private float button(Canvas canvas, float x, float y, float width, float height,
+            String label, int id, boolean enabled, float maxTextSize) {
+        loadButtonImagesIfNeeded();
+
+        boolean pressed = enabled && pressedButtonId == id;
+        Bitmap buttonBitmap = pressed ? buttonPressed : buttonUnpressed;
+        Paint bitmapPaint = enabled ? imagePaint : disabledImagePaint;
+        if (buttonBitmap != null && buttonBitmap.texture != null) {
+            drawNineSlice(canvas, buttonBitmap, x, y, width, height, bitmapPaint);
+        } else {
+            fillPaint.setColor(enabled ? Color.argb(255, 70, 100, 160) : Color.argb(120, 60, 66, 78));
+            canvas.drawRect(x, y, x + width, y + height, fillPaint);
+        }
+
+        float size = maxTextSize;
         textPaint.setTextSize(size);
-        textPaint.setColor(enabled ? Color.WHITE : Color.GRAY);
-        // Paint.measureText is an estimate; keep a margin so long labels never leave the button.
-        while (size > 10f && textPaint.measureText(label) * 1.25f > width - 16f) {
+        textPaint.setColor(enabled ? BUTTON_TEXT_COLOR : BUTTON_DISABLED_TEXT_COLOR);
+        // Keep the label inside the carved edge of the button art. Paint.measureText is an estimate.
+        float maxTextWidth = width - Math.max(36f, width * 0.18f);
+        while (size > 10f && textPaint.measureText(label) * 1.25f > maxTextWidth) {
             size -= 1f;
             textPaint.setTextSize(size);
         }
-        drawText(canvas, textPaint, label, x + width / 2f, y + height * 0.65f, true);
+        // Baseline placed so the capitals straddle the carved band's centre: the drawText bridge
+        // paints capitals about 0.7*size tall above the baseline, so half of that is below it.
+        drawText(canvas, textPaint, label, x + width / 2f,
+                y + height * BUTTON_FIELD_CENTER_Y + size * 0.35f, true);
         textPaint.setTextSize(24f);
         frameButtonRects.add(new RectF(x, y, x + width, y + height));
         frameButtonIds.add(id);
         return y + height;
+    }
+
+    private void loadButtonImagesIfNeeded() {
+        if (buttonImagesLoadAttempted) {
+            return;
+        }
+        buttonImagesLoadAttempted = true;
+        buttonUnpressed = resources.getImageFromLocalRes("button_unpressed.png");
+        buttonPressed = resources.getImageFromLocalRes("button_pressed.png");
+        if (buttonUnpressed != null && buttonUnpressed.texture != null) {
+            buttonUnpressed.texture.setFilter(Texture.TextureFilter.Linear,
+                    Texture.TextureFilter.Linear);
+        }
+        if (buttonPressed != null && buttonPressed.texture != null) {
+            buttonPressed.texture.setFilter(Texture.TextureFilter.Linear,
+                    Texture.TextureFilter.Linear);
+        }
+    }
+
+    private void drawNineSlice(Canvas canvas, Bitmap bitmap, float x, float y, float width,
+            float height, Paint paint) {
+        int srcX = BUTTON_SRC_X;
+        int srcY = BUTTON_SRC_Y;
+        int srcW = BUTTON_SRC_WIDTH;
+        int srcH = BUTTON_SRC_HEIGHT;
+        int slice = Math.min(BUTTON_SRC_SLICE, Math.min(srcW / 3, srcH / 3));
+
+        float cornerX = slice * (width / (float) srcW);
+        float cornerY = slice * (height / (float) srcH);
+        if (width <= cornerX * 2f || height <= cornerY * 2f || cornerX <= 0f || cornerY <= 0f) {
+            drawNineSlicePart(canvas, bitmap, paint, srcX, srcY, srcW, srcH, x, y, width, height);
+            return;
+        }
+
+        int centerW = srcW - 2 * slice;
+        int centerH = srcH - 2 * slice;
+        float centerWidth = width - 2f * cornerX;
+        float centerHeight = height - 2f * cornerY;
+
+        drawNineSlicePart(canvas, bitmap, paint, srcX, srcY, slice, slice,
+                x, y, cornerX, cornerY);
+        drawNineSlicePart(canvas, bitmap, paint, srcX + srcW - slice, srcY, slice, slice,
+                x + width - cornerX, y, cornerX, cornerY);
+        drawNineSlicePart(canvas, bitmap, paint, srcX, srcY + srcH - slice, slice, slice,
+                x, y + height - cornerY, cornerX, cornerY);
+        drawNineSlicePart(canvas, bitmap, paint, srcX + srcW - slice, srcY + srcH - slice,
+                slice, slice, x + width - cornerX, y + height - cornerY, cornerX, cornerY);
+
+        drawNineSlicePart(canvas, bitmap, paint, srcX + slice, srcY, centerW, slice,
+                x + cornerX, y, centerWidth, cornerY);
+        drawNineSlicePart(canvas, bitmap, paint, srcX + slice, srcY + srcH - slice, centerW, slice,
+                x + cornerX, y + height - cornerY, centerWidth, cornerY);
+        drawNineSlicePart(canvas, bitmap, paint, srcX, srcY + slice, slice, centerH,
+                x, y + cornerY, cornerX, centerHeight);
+        drawNineSlicePart(canvas, bitmap, paint, srcX + srcW - slice, srcY + slice, slice, centerH,
+                x + width - cornerX, y + cornerY, cornerX, centerHeight);
+        drawNineSlicePart(canvas, bitmap, paint, srcX + slice, srcY + slice, centerW, centerH,
+                x + cornerX, y + cornerY, centerWidth, centerHeight);
+    }
+
+    private void drawNineSlicePart(Canvas canvas, Bitmap bitmap, Paint paint, int srcX, int srcY,
+            int srcW, int srcH, float dstX, float dstY, float dstW, float dstH) {
+        nineSrc.set(srcX, srcY, srcX + srcW, srcY + srcH);
+        nineDst.set(dstX, dstY, dstX + dstW, dstY + dstH);
+        canvas.drawBitmap(bitmap, nineSrc, nineDst, paint);
     }
 
     private void drawTitle(Canvas canvas, String text, float width, float y, float size, int color) {
@@ -514,7 +763,11 @@ public class LauncherScreen extends InputAdapter {
 
     private void drawText(Canvas canvas, Paint paint, String text, float centerXOrX, float baseline,
             boolean centered) {
-        float x = centered ? centerXOrX - paint.measureText(text) / 2f : centerXOrX;
+        // Centre on the real glyph advances: Paint.measureText is a character-count estimate, so
+        // centring on it shifts short labels off the middle of their field.
+        float advance = canvas.textWidth(text, paint);
+        float x = centered ? centerXOrX - (advance > 0f ? advance : paint.measureText(text)) / 2f
+                : centerXOrX;
         canvas.drawText(text, x, baseline, paint);
     }
 
@@ -532,6 +785,22 @@ public class LauncherScreen extends InputAdapter {
         if (noPreviewPlaceholder != null) {
             noPreviewPlaceholder.recycle();
             noPreviewPlaceholder = null;
+        }
+        if (mainBackground != null) {
+            mainBackground.recycle();
+            mainBackground = null;
+        }
+        if (logo != null) {
+            logo.recycle();
+            logo = null;
+        }
+        if (buttonUnpressed != null) {
+            buttonUnpressed.recycle();
+            buttonUnpressed = null;
+        }
+        if (buttonPressed != null) {
+            buttonPressed.recycle();
+            buttonPressed = null;
         }
     }
 }
