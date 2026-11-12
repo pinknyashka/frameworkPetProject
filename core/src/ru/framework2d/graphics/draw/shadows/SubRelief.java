@@ -127,12 +127,7 @@ public class SubRelief extends ComponentsHandler {
 //				if (angle != 0) canvas.rotate(angle);
 				drawingArea.set((int)-sx, (int)-sy, (int) sx, (int) sy);
 				bufferingFilter = paint.getColorFilter();
-				// The relief mask carries both shading (black pixels) and specular strokes
-				// (white pixels). Tinting it with the diffuse attenuation would clamp every
-				// bright stroke to a dim grey, so the mask is tinted with the light colour at
-				// full intensity instead. Black pixels multiply to black either way, which
-				// keeps the existing dome shading unchanged.
-				paint.setColorFilter(light.colorFilter != null ? light.colorFilter : light.diffuseFilter);
+				paint.setColorFilter(light.diffuseFilter);
 				canvas.drawBitmap(relief.reliefSprite.spriteImage, 
 									relief.reliefSprite.lstSpritesRects.get(
 											relief.currentSpriteNo.value), drawingArea, paint);
