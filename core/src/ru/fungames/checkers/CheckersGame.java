@@ -13,6 +13,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 
 import ru.framework2d.compat.Canvas;
 import ru.framework2d.compat.MotionEvent;
+import ru.framework2d.compat.SmoothFonts;
 import ru.framework2d.core.Engine;
 import ru.framework2d.core.GameCore;
 import ru.framework2d.graphics.GraphicalPeriphery;
@@ -74,8 +75,8 @@ public class CheckersGame extends Game {
     @Override
     public void create() {
         batch = new SpriteBatch();
-        font = new BitmapFont();
         canvas = new Canvas();
+        font = SmoothFonts.installOn(canvas);
 
         camera = new OrthographicCamera();
         resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());

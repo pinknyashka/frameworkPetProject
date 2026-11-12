@@ -17,6 +17,7 @@ import com.badlogic.gdx.math.Matrix4;
 
 import ru.framework2d.compat.Bitmap;
 import ru.framework2d.compat.Canvas;
+import ru.framework2d.compat.SmoothFonts;
 import ru.framework2d.core.Engine;
 import ru.framework2d.compat.Log;
 
@@ -103,8 +104,10 @@ public class RenderServices {
 
         batch = new SpriteBatch();
         uiBatch = new SpriteBatch();
-        font = new BitmapFont();
         textCanvas = new Canvas();
+        // Smooth by default: 48px FreeType glyphs are only ever downscaled to the sizes the maps
+        // ask for. installOn leaves the canvas at the 15px base when the native is missing.
+        font = SmoothFonts.installOn(textCanvas);
 
         sceneShader = loadShader("shaders/hq_scene.vert", "shaders/hq_scene.frag", "hq_scene");
         shadowShader = loadShader("shaders/hq_shadow.vert", "shaders/hq_shadow.frag", "hq_shadow");
