@@ -45,21 +45,6 @@ public class LauncherScreen extends InputAdapter {
     private static final float THUMBNAIL_SIZE = 84f;
     private static final float TAP_SLOP = 12f;
 
-    private static final int BUTTON_SRC_X = 135;
-    private static final int BUTTON_SRC_Y = 240;
-    private static final int BUTTON_SRC_WIDTH = 1650;
-    private static final int BUTTON_SRC_HEIGHT = 630;
-    private static final int BUTTON_SRC_SLICE = 190;
-
-    /**
-     * The button art is a carved plank: a smooth band between two decorative carve rows carries
-     * the label. Measuring the art, the band runs over the middle 0.30..0.65 of the nine-slice
-     * source rect, so the label must sit at its centre, not at the button's geometric centre.
-     * drawNineSlice scales every source region proportionally, so that fraction of the source
-     * rect is the same fraction of any drawn button.
-     */
-    private static final float BUTTON_FIELD_CENTER_Y = 0.47f;
-
     /** Logo from art/Logo-checkers.png, keyed and trimmed by art/PrepareLogo.java. */
     private static final String LOGO_IMAGE = "checkers_logo.png";
     private static final String FALLBACK_TITLE = "framework2d checkers";
@@ -73,9 +58,6 @@ public class LauncherScreen extends InputAdapter {
     private static final float MAIN_MIN_BUTTON_HEIGHT = 30f;
     private static final float MAIN_STACK_TOP = 0.34f;
     private static final float MAIN_STACK_BOTTOM = 0.90f;
-
-    private static final int BUTTON_TEXT_COLOR = Color.rgb(55, 30, 16);
-    private static final int BUTTON_DISABLED_TEXT_COLOR = Color.argb(190, 55, 30, 16);
 
     public interface MapChooser {
         void onMapChosen(String mapName);
@@ -102,8 +84,6 @@ public class LauncherScreen extends InputAdapter {
     private Bitmap buttonPressed;
     private boolean buttonImagesLoadAttempted;
     private int pressedButtonId = BUTTON_NONE;
-    private final Rect nineSrc = new Rect();
-    private final RectF nineDst = new RectF();
 
     private int screen = SCREEN_MAIN;
     private boolean showingTestMaps;
@@ -423,7 +403,7 @@ public class LauncherScreen extends InputAdapter {
         // buttons wide only enough for the carved text area. If the window is short, scale the
         // whole button stack down rather than stretching a button out of proportion, and always
         // start it under the logo so the two never overlap on a small window.
-        float aspect = BUTTON_SRC_WIDTH / (float) BUTTON_SRC_HEIGHT;
+        float aspect = ButtonArt.SRC_WIDTH / (float) ButtonArt.SRC_HEIGHT;
         float desiredWidth = Math.min(buttonWidth, width * MAIN_BUTTON_WIDTH_RATIO);
         float desiredHeight = desiredWidth / aspect;
         float gap = Math.max(8f, desiredHeight * 0.12f);
@@ -664,25 +644,14 @@ public class LauncherScreen extends InputAdapter {
         Bitmap buttonBitmap = pressed ? buttonPressed : buttonUnpressed;
         Paint bitmapPaint = enabled ? imagePaint : disabledImagePaint;
         if (buttonBitmap != null && buttonBitmap.texture != null) {
-            drawNineSlice(canvas, buttonBitmap, x, y, width, height, bitmapPaint);
+            ButtonArt.draw(canvas, buttonBitmap, x, y, width, height, bitmapPaint);
         } else {
             fillPaint.setColor(enabled ? Color.argb(255, 70, 100, 160) : Color.argb(120, 60, 66, 78));
             canvas.drawRect(x, y, x + width, y + height, fillPaint);
         }
 
-        float size = maxTextSize;
-        textPaint.setTextSize(size);
-        textPaint.setColor(enabled ? BUTTON_TEXT_COLOR : BUTTON_DISABLED_TEXT_COLOR);
-        // Keep the label inside the carved edge of the button art. Paint.measureText is an estimate.
-        float maxTextWidth = width - Math.max(36f, width * 0.18f);
-        while (size > 10f && textPaint.measureText(label) * 1.25f > maxTextWidth) {
-            size -= 1f;
-            textPaint.setTextSize(size);
-        }
-        // Baseline placed so the capitals straddle the carved band's centre: the drawText bridge
-        // paints capitals about 0.7*size tall above the baseline, so half of that is below it.
-        drawText(canvas, textPaint, label, x + width / 2f,
-                y + height * BUTTON_FIELD_CENTER_Y + size * 0.35f, true);
+        textPaint.setColor(enabled ? ButtonArt.TEXT_COLOR : ButtonArt.DISABLED_TEXT_COLOR);
+        ButtonArt.drawLabel(canvas, textPaint, label, x, y, width, height, maxTextSize);
         textPaint.setTextSize(24f);
         frameButtonRects.add(new RectF(x, y, x + width, y + height));
         frameButtonIds.add(id);
@@ -696,62 +665,8 @@ public class LauncherScreen extends InputAdapter {
         buttonImagesLoadAttempted = true;
         buttonUnpressed = resources.getImageFromLocalRes("button_unpressed.png");
         buttonPressed = resources.getImageFromLocalRes("button_pressed.png");
-        if (buttonUnpressed != null && buttonUnpressed.texture != null) {
-            buttonUnpressed.texture.setFilter(Texture.TextureFilter.Linear,
-                    Texture.TextureFilter.Linear);
-        }
-        if (buttonPressed != null && buttonPressed.texture != null) {
-            buttonPressed.texture.setFilter(Texture.TextureFilter.Linear,
-                    Texture.TextureFilter.Linear);
-        }
-    }
-
-    private void drawNineSlice(Canvas canvas, Bitmap bitmap, float x, float y, float width,
-            float height, Paint paint) {
-        int srcX = BUTTON_SRC_X;
-        int srcY = BUTTON_SRC_Y;
-        int srcW = BUTTON_SRC_WIDTH;
-        int srcH = BUTTON_SRC_HEIGHT;
-        int slice = Math.min(BUTTON_SRC_SLICE, Math.min(srcW / 3, srcH / 3));
-
-        float cornerX = slice * (width / (float) srcW);
-        float cornerY = slice * (height / (float) srcH);
-        if (width <= cornerX * 2f || height <= cornerY * 2f || cornerX <= 0f || cornerY <= 0f) {
-            drawNineSlicePart(canvas, bitmap, paint, srcX, srcY, srcW, srcH, x, y, width, height);
-            return;
-        }
-
-        int centerW = srcW - 2 * slice;
-        int centerH = srcH - 2 * slice;
-        float centerWidth = width - 2f * cornerX;
-        float centerHeight = height - 2f * cornerY;
-
-        drawNineSlicePart(canvas, bitmap, paint, srcX, srcY, slice, slice,
-                x, y, cornerX, cornerY);
-        drawNineSlicePart(canvas, bitmap, paint, srcX + srcW - slice, srcY, slice, slice,
-                x + width - cornerX, y, cornerX, cornerY);
-        drawNineSlicePart(canvas, bitmap, paint, srcX, srcY + srcH - slice, slice, slice,
-                x, y + height - cornerY, cornerX, cornerY);
-        drawNineSlicePart(canvas, bitmap, paint, srcX + srcW - slice, srcY + srcH - slice,
-                slice, slice, x + width - cornerX, y + height - cornerY, cornerX, cornerY);
-
-        drawNineSlicePart(canvas, bitmap, paint, srcX + slice, srcY, centerW, slice,
-                x + cornerX, y, centerWidth, cornerY);
-        drawNineSlicePart(canvas, bitmap, paint, srcX + slice, srcY + srcH - slice, centerW, slice,
-                x + cornerX, y + height - cornerY, centerWidth, cornerY);
-        drawNineSlicePart(canvas, bitmap, paint, srcX, srcY + slice, slice, centerH,
-                x, y + cornerY, cornerX, centerHeight);
-        drawNineSlicePart(canvas, bitmap, paint, srcX + srcW - slice, srcY + slice, slice, centerH,
-                x + width - cornerX, y + cornerY, cornerX, centerHeight);
-        drawNineSlicePart(canvas, bitmap, paint, srcX + slice, srcY + slice, centerW, centerH,
-                x + cornerX, y + cornerY, centerWidth, centerHeight);
-    }
-
-    private void drawNineSlicePart(Canvas canvas, Bitmap bitmap, Paint paint, int srcX, int srcY,
-            int srcW, int srcH, float dstX, float dstY, float dstW, float dstH) {
-        nineSrc.set(srcX, srcY, srcX + srcW, srcY + srcH);
-        nineDst.set(dstX, dstY, dstX + dstW, dstY + dstH);
-        canvas.drawBitmap(bitmap, nineSrc, nineDst, paint);
+        ButtonArt.loadSmooth(buttonUnpressed);
+        ButtonArt.loadSmooth(buttonPressed);
     }
 
     private void drawTitle(Canvas canvas, String text, float width, float y, float size, int color) {

@@ -22,6 +22,7 @@ import ru.framework2d.touches.TouchPeriphery;
 
 import ru.framework2d.gdx.TouchBridge;
 
+import ru.fungames.checkers.launcher.BackToMenuButton;
 import ru.fungames.checkers.launcher.LauncherScreen;
 
 public class CheckersGame extends Game {
@@ -51,7 +52,12 @@ public class CheckersGame extends Game {
     /** When true, the auto-select helper opens the about screen instead of a map list (smoke helper). */
     public boolean launcherAutoOpenAbout;
 
+    /** When > 0, a synthetic tap on the in-game back button fires after this many frames (smoke helper). */
+    public int backSmokeAfterFrames;
+
     private LauncherScreen launcher;
+    private BackToMenuButton backToMenuButton;
+    private GameInputProcessor gameInputProcessor;
     private boolean gameStarted;
 
     private GameCore core;
@@ -89,6 +95,8 @@ public class CheckersGame extends Game {
                             startGame(chosenMapName);
                         }
                     }, DEFAULT_MAP, launcherLastMap());
+            // Only meaningful when there is a menu to go back to; direct-to-map runs have none.
+            backToMenuButton = new BackToMenuButton(new ru.framework2d.core.GameResources());
             launcher.setAutoSelectMapAfterFrames(launcherAutoSelectAfterFrames,
                     launcherAutoSelectMap, launcherAutoSelectTests, launcherAutoScrollPixels,
                     launcherAutoOpenAbout);
@@ -118,13 +126,10 @@ public class CheckersGame extends Game {
             }
         }
 
-        if (touch != null) {
-            Gdx.input.setInputProcessor(new TouchBridge(touch));
-        } else {
-            // The map has no touch engine: drop the launcher processor so a tap cannot start
-            // a second engine on top of the running one.
-            Gdx.input.setInputProcessor(null);
-        }
+        // The back button gets the tap first so it never also lands in the game; maps without a
+        // touch engine get a null bridge, and everything but the button is then ignored.
+        gameInputProcessor = new GameInputProcessor(touch != null ? new TouchBridge(touch) : null);
+        Gdx.input.setInputProcessor(gameInputProcessor);
 
         gameStarted = true;
         Gdx.app.log("framework2d", "engine built; map=" + mapName
@@ -144,6 +149,9 @@ public class CheckersGame extends Game {
         periphery = null;
         touch = null;
         gameStarted = false;
+        if (backToMenuButton != null) {
+            backToMenuButton.setPressed(false);
+        }
         if (launcher != null) {
             launcher.setLastPlayedMap(mapName);
             Gdx.input.setInputProcessor(launcher);
@@ -212,6 +220,85 @@ public class CheckersGame extends Game {
             periphery.draw(canvas);
             batch.end();
         }
+
+        if (backToMenuButton != null) {
+            canvas.setFrame(batch, camera.combined, font);
+            batch.setProjectionMatrix(camera.combined);
+            batch.begin();
+            backToMenuButton.draw(canvas);
+            batch.end();
+        }
+
+        if (backSmokeAfterFrames > 0 && frames >= backSmokeAfterFrames) {
+            backSmokeAfterFrames = 0;
+            if (backToMenuButton != null && gameInputProcessor != null) {
+                int x = (int) backToMenuButton.centerX();
+                int y = (int) backToMenuButton.centerY();
+                Gdx.app.log("framework2d", "smoke: tapping the in-game back button;");
+                gameInputProcessor.touchDown(x, y, 0, 0);
+                gameInputProcessor.touchUp(x, y, 0, 0);
+            }
+        }
+    }
+
+    /**
+     * Input for the running game: a gesture that starts on the back button is fully owned here
+     * (the engine never sees a half-tap under the button), everything else goes to the map's
+     * touch pipeline. With no touch engine in the map the bridge is null and only the button acts.
+     */
+    private final class GameInputProcessor extends com.badlogic.gdx.InputAdapter {
+
+        private final TouchBridge bridge;
+        private int buttonPointer = -1;
+
+        GameInputProcessor(TouchBridge bridge) {
+            this.bridge = bridge;
+        }
+
+        @Override
+        public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+            if (isOnBackButton(screenX, screenY)) {
+                buttonPointer = pointer;
+                backToMenuButton.setPressed(true);
+                return true;
+            }
+            return bridge != null && bridge.touchDown(screenX, screenY, pointer, button);
+        }
+
+        @Override
+        public boolean touchDragged(int screenX, int screenY, int pointer) {
+            if (pointer == buttonPointer) {
+                return true;
+            }
+            return bridge != null && bridge.touchDragged(screenX, screenY, pointer);
+        }
+
+        @Override
+        public boolean touchUp(int screenX, int screenY, int pointer, int button) {
+            if (pointer == buttonPointer) {
+                buttonPointer = -1;
+                backToMenuButton.setPressed(false);
+                if (isOnBackButton(screenX, screenY)) {
+                    returnToMenu();
+                }
+                return true;
+            }
+            return bridge != null && bridge.touchUp(screenX, screenY, pointer, button);
+        }
+
+        @Override
+        public boolean touchCancelled(int screenX, int screenY, int pointer, int button) {
+            if (pointer == buttonPointer) {
+                buttonPointer = -1;
+                backToMenuButton.setPressed(false);
+                return true;
+            }
+            return bridge != null && bridge.touchCancelled(screenX, screenY, pointer, button);
+        }
+
+        private boolean isOnBackButton(int screenX, int screenY) {
+            return backToMenuButton != null && backToMenuButton.contains(screenX, screenY);
+        }
     }
 
     private void renderLauncher() {
@@ -274,6 +361,9 @@ public class CheckersGame extends Game {
         }
         if (launcher != null) {
             launcher.dispose();
+        }
+        if (backToMenuButton != null) {
+            backToMenuButton.dispose();
         }
         if (batch != null) {
             batch.dispose();

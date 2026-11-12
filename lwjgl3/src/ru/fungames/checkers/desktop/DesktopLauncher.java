@@ -58,6 +58,8 @@ public final class DesktopLauncher {
                 }
             } else if ("--drag-smoke".equals(arg)) {
                 game.dragSmoke = true;
+            } else if (arg.startsWith("--back-after=")) {
+                game.backSmokeAfterFrames = Integer.parseInt(arg.substring("--back-after=".length()));
             }
         }
 
