@@ -353,7 +353,7 @@
 				    <context name = "localTransparency" value = "power"/>
 				    <context name = "isLocalVisible" value = "isSelected"/>
 				</pict>
-				<text text = "white" fontSize = "txtsz" color = "black"/>
+				<text text = "white" fontSize = "txtsz" color = "#5A2622"/>
 				<animation currentValue = "0.0" startValue = "0.0" step = "1.0" interval = "0.2" finalValue = "5.0">
 				    <context name = "activation" value = "clikable"/>
 					<context name = "currentValue" value = "validSprite"/>
@@ -414,7 +414,7 @@
 				<!-- <pict radius = "checkerradius/8" spriteName = "point" layer = "3" isRotatable = "false" localTransparency = "1" isLocalVisible = "true">
 				    <context name = "position" value = "pointPosition"/>
 				</pict> -->
-				<text text="black" fontSize="txtsz" color="white"/>
+				<text text="red" fontSize="txtsz" color="white"/>
 				<animation currentValue = "0.0" startValue = "0.0" step = "1.0" interval = "0.2" finalValue = "5.0">
 				    <context name = "activation" value = "isClikable"/>
 					<context name = "currentValue" value = "validSprite"/>
