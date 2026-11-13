@@ -1,0 +1,53 @@
+All 12 candidates are ready in framework2d\sound_samples\ (untracked, delete after choice). Diagnosis confirmed: your bump.ogg is a low thud (peak ~121 Hz, energy <500 Hz, 181 ms slow decay) — real checkers "thocks" are short, bright, and fast.
+Generated (synthesized, ogg 44.1 kHz mono):
+File	Len	Character
+S1_thock_wood.ogg	90 ms	Wood-on-wood thock: 620 Hz body + 1 kHz/2.3 kHz partials, faint low end — closest to a real piece hit
+S2_clack_brass.ogg	160 ms	Metallic clack: 1.85/2.9/4.3 kHz ring, longer decay
+S3_tick_plastic.ogg	55 ms	Light plastic tick: 380 Hz body, quick
+S4_thunk_heavy.ogg	160 ms	Heavy piece: 240/520 Hz but with a click
+S5_snap_crisp.ogg	40 ms	Ultra-short crisp click, board-stop feel
+Found online — Freesound, real foley of Connect-Four discs (same geometry as checkers men), "Designer's Choice UCS Pack #69 – TOYS" by Nicholas A. Judy: all CC-BY, author states royalty-free, credit optional. Previews downloaded locally (mp3, no login needed to listen).
+File	Len	What it is	Source
+I1_fs866399_three_drops_spin.mp3	2.9 s	3 discs drop, one spins — best "thock" source	866399 (https://freesound.org/people/designerschoice/sounds/866399/)
+I3_fs866397_falling.mp3	2.0 s	Discs falling	866397 (https://freesound.org/people/designerschoice/sounds/866397/)
+I2_fs866398_lever_slide_drop.mp3	2.7 s	Slide + discs drop out of slot	866398 (https://freesound.org/people/designerschoice/sounds/866398/)
+I4_fs866396_drop_slot_02.mp3	47.9 s	Many single drops — pick the cleanest hit	866396 (https://freesound.org/people/designerschoice/sounds/866396/)
+I5_fs866395_drop_slot_01.mp3	53.6 s	Same, take 2	866395 (https://freesound.org/people/designerschoice/sounds/866395/)
+I6_fs866394_drop_spin.mp3	32.9 s	Drop + spin	866394 (https://freesound.org/people/designerschoice/sounds/866394/)
+I7_fs866400_lever_slide.mp3	0.7 s	Slide/stop motion (variant)	866400 (https://freesound.org/people/designerschoice/sounds/866400/)
+Pack page: https://freesound.org/people/designerschoice/packs/43695/ (full-quality downloads need a free Freesound account; the previews are fine for choosing)
+My suggestion: listen to I1 and S1 first — one is a real disc thock, the other is a synthetic match. For the in-game asset (fired on every collision, rate-limited to 120 ms in SoundPlayer), a ~60–100 ms single hit works best; if you pick I1–I6, I'll trim the single cleanest impact, normalize, and re-encode to ogg.
+Wiring after your choice (either way, no code changes):
+- Option A: replace assets/Sounds/bump.ogg in place — zero XML edits.
+- Option B: keep bump, add e.g. thock.ogg and update <audio sound="..."> in checkers_tree.xml:243,319 (and battle_checkers.xml:171,215).
+
+---
+Extracted in-game clips (2026-11-13), same recipe as the impact clips. Preview source, no Freesound
+account needed: https://cdn.freesound.org/previews/866/<id>_6951162-hq.mp3
+License: "Designer's Choice UCS Pack #69 - TOYS" by Nicholas A. Judy, CC-BY 4.0
+(https://freesound.org/people/designerschoice/packs/43695/); author states the pack is royalty-free
+and credit is optional, so it is recorded here instead of shown in game.
+
+Impact set (already in assets/Sounds):
+  bump.ogg, H_I4_hit2.ogg, H_I5_hit3.ogg  - single disc hits trimmed to ~80-120 ms
+
+Slide / motion set (used by source="motion" audio in checkers_tree.xml and sound_motion_test.xml):
+  assets/Sounds/slide_take.ogg  0.213 s  peak -3.2 dB, RMS -16.7 dB
+  Cut from the user's own recording sound_samples/checker_sliding1s.m4a: the steadiest 0.30 s of its
+  0.050-0.646 s body (attack and lift-off excluded), rotation seam, no denoise, no time stretch, no
+  pitch change. Measured 2.3 dB level range over a 3x repeat and a 3.7 dB step at the loop boundary.
+  Pipeline: sound_samples/gen_checker_slide_clean.py; table: sound_samples/clean_take_slides.txt;
+  full candidate history: plans/motion-sound-plan.md.
+  Earlier slide clips, no longer referenced, kept for A/B in sound_samples/from_shipped/:
+    slide_sh_pure.ogg  1.20 s  peak -3.6 dB, RMS -17.1 dB (user-supplied, converted unchanged)
+    slide_sh_slow.ogg  1.40 s  peak -3.4 dB, RMS -16.3 dB (user-supplied, converted unchanged)
+Source of those two: user-supplied samples (sound_samples/slide_sh_pure.wav, slide_sh_slow.wav),
+already mono 44100 Hz PCM, level unchanged; converted as-is with libvorbis -q:a 5, no filters,
+no fades. They were seamless loop material: RMS flat within +-1 dB and matching first/last 5 ms.
+Keep a slide loop longer than one pass of a move only if its own level arc is flat: the restart of
+an arc is audible, and a short segment pulses.
+
+Rejected first attempt (deleted): the Freesound 866398/866400 crops H_I7_slide1 / H_I2_slide2 /
+H_I2_slide3. In that pack the only continuous friction is 866400 at t=0.12-0.40 s; the crops kept
+the 1.2-2.4 kHz lever rumble and slot rattle, and a 0.32 s faded clip re-loops at ~3 Hz, which
+reads as marching instead of sliding. Left here as a note about what to avoid.

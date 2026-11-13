@@ -273,14 +273,49 @@ public class HandlerSoundsTransferTest {
 	}
 
 	@Test
-	public void pins_onlyTheFirstAudioComponentOfAnEntityMakesASound() {
+	public void everyCollisionAudioComponentOfAnEntityMakesASound() {
+		// one checker carries two audio components: the thud on impact and the slide while moving
 		AudioComponent second = SoundTestSupport.audio(handler, disc);
 		second.sound.value = "click";
 
 		assertTrue(handler.transferData(disc, SoundTestSupport.collisionSignal(second)));
 
+		assertEquals(2, recorder.played.size());
+		assertEquals("bump", recorder.played.get(0).sound);
+		assertEquals("click", recorder.lastSound());
+	}
+
+	@Test
+	public void aDoublyLinkedCommitStillPlaysEachCollisionComponentOnlyOnce() {
+		AudioComponent second = SoundTestSupport.audio(handler, disc);
+		second.sound.value = "click";
+
+		audio.collision.commit(null, disc);
+
+		assertEquals(2, recorder.played.size());
+		assertEquals(2, recorder.requested.size());
+	}
+
+	@Test
+	public void aMotionComponentNeverReactsToTheCollisionSignal() {
+		Entity slider = SoundTestSupport.entity("slider");
+		AudioComponent motion = SoundTestSupport.motionAudio(handler, slider);
+
+		assertFalse(handler.transferData(slider, SoundTestSupport.collisionSignal(motion)));
+
+		assertTrue(recorder.played.isEmpty());
+		assertTrue(recorder.looped.isEmpty());
+	}
+
+	@Test
+	public void aMotionComponentDoesNotBlockTheCollisionComponentOfTheSameEntity() {
+		AudioComponent motion = SoundTestSupport.motionAudio(handler, disc);
+
+		assertTrue(handler.transferData(disc, SoundTestSupport.collisionSignal(audio)));
+
 		assertEquals(1, recorder.played.size());
 		assertEquals("bump", recorder.lastSound());
+		assertTrue(recorder.looped.isEmpty());
 	}
 
 	@Test

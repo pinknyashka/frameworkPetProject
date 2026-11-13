@@ -39,6 +39,17 @@ public class AudioComponent extends Component {
 	//collision window in milliseconds used by parallelSounds; 0 disables the window
 	public Numeral parallelWindow = new Numeral(50);
 
+	//what drives this component: "collision" reacts to the physics collision signal,
+	//"motion" follows the movement of the entity and loops the sound while the speed is non-zero
+	public Text source = new Text("collision");
+
+	//movement speed (px per base interval) at which the entity counts as moving for source "motion";
+	//slower movement stops the sound
+	public Fractional motionSpeed = new Fractional(0.05f);
+
+	//maximum number of entities that may play motion sounds of this kind at the same time
+	public Numeral motionSounds = new Numeral(3);
+
 	@Override
 	public String getShortClassName() {
 		return SHORT_CLASS_NAME;

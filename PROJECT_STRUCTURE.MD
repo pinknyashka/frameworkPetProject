@@ -57,6 +57,7 @@ The desktop smoke run currently uses `checkers_tree` as the default map and exit
 | `local.properties` | Machine-local Android SDK pointer. Must point `sdk.dir` to a valid Android SDK on the current machine. |
 | `plans/binding-plan.md` | Plan + verification result for the data-binding feature (`<dataName>_binding` map attributes); implemented and smoke-verified, no longer pending. |
 | `plans/launcher-plan.md` | Plan + verification note for the prototype launcher screen (New Game / Continue / Tests / About, scrollable map list), the deferred `GameCore` start, the smoke launcher flags, and the `--shot=` pixmap orientation fix. |
+| `plans/motion-sound-plan.md` | Plan + verification note for motion-driven checker audio (`source = "motion"` slide clip, per-tick polling, three-loop cap) and the `sound_motion_test` smoke map. |
 | `plans/new-subsystem-plan.md` | Runbook for adding a new subsystem via signal fields; verified against the sound subsystem. |
 | `plans/parallel-agents-plan.md` | Design + verification note for the runtime resource locks (`ru.framework2d.core.agents`), source/build claims, integration points, and follow-ups. |
 | `plans/tests-plan.md` | Plan, harness contract, current coverage, and pinned engine quirks for the headless `:core:test` regression suite. |
@@ -401,11 +402,11 @@ These advanced drawing features currently rely on libGDX-backed approximations a
 | File | Description |
 |---|---|
 | `DirectSound.java` | Sound engine node for maps. |
-| `HandlerSounds.java` | Plays collision-triggered audio, scales volume by `PhysicalShape.collisionSpeed`, picks from `sounds` when `playback` is `random`, and limits rapid collisions with `parallelSounds`/`parallelWindow`. |
-| `AudioComponent.java` | `audio` component; defines `sound`, `sounds`, `playback`, `volume`, `fullVolumeSpeed`, `minVolume`, `parallelSounds`, and `parallelWindow`. |
-| `SoundPlayer.java` | Playback helper backed by `GameResources.getSound(...)` and libGDX `Sound`. |
+| `HandlerSounds.java` | Plays collision-triggered audio (volume scaled by `PhysicalShape.collisionSpeed`, `sounds` when `playback` is `random`, capped by `parallelSounds`/`parallelWindow`) and polls `source = "motion"` components every tick to loop, re-volume and stop their slide clip while `movement.currentSpeed` is non-zero, with at most `motionSounds` (hard cap 3) moving entities sounding at once. |
+| `AudioComponent.java` | `audio` component; defines `source`, `sound`, `sounds`, `playback`, `volume`, `fullVolumeSpeed`, `minVolume`, `parallelSounds`, `parallelWindow`, `motionSpeed`, and `motionSounds`. |
+| `SoundPlayer.java` | Playback helper backed by `GameResources.getSound(...)` and libGDX `Sound`: `play`, `loop`, `setVolume`, `stop`. |
 
-`assets/xml/sound_test.xml` is a smoke map for collision sound, volume-ramp, random-list, and parallel-window verification: `--smoke --map=sound_test`.
+`assets/xml/sound_test.xml` is a smoke map for collision sound, volume-ramp, random-list, and parallel-window verification: `--smoke --map=sound_test`. `assets/xml/sound_motion_test.xml` is the motion-audio smoke map: a `<surface>` medium slows four movers to rest (one stays outside the medium), which proves the loop, the three-sound cap, and the stop path; run with `-Dframework2d.log.debug=true` to see the `[Sound]` lines.
 
 ## `lwjgl3/` — desktop module
 
@@ -472,6 +473,7 @@ Runtime config consumed by migrated `GameResources`. Defines Maps/Images/Sounds 
 | `checkers_tree.xml` | Currently the default active runtime map. Uses the current engine-tag schema: `<direct package="..." engineName="...">`, `<handler subpackage="..." engineName="...">`, `<interaction subpackage="..." engineName="...">`, `<sub subpackage="..." engineName="...">`. |
 | `binding_test.xml` | Smoke/verification map for the data-binding feature (`<*_binding` attributes on component data fields); loadable via `--map=binding_test` in the desktop run. |
 | `sound_test.xml` | Smoke/verification map for collision sound, impact-speed volume ramp, and random sound-list playback; loadable via `--map=sound_test` in the desktop run. |
+| `sound_motion_test.xml` | Smoke/verification map for `source = "motion"` audio: a `<surface>` medium slows movers to rest, so the slide loop, the `motionSounds` cap, and the stop path are all observable; loadable via `--map=sound_motion_test` in the desktop run. |
 | `battle_checkers.xml` | Legacy/preview map kept for compatibility and reference. Uses an older engine-tag style (`name = "physical"`, etc.) that does not currently match `EnginesManager.connectEngine`'s reflective schema. Not loaded by the current bridge. |
 | `checkers_with_blocks.xml` | Legacy/preview block-phase map kept for compatibility and reference. Uses engine-tag attributes/styles that do not currently match the active runtime bridge's parser expectations. Not loaded by the current bridge. |
 
@@ -501,6 +503,8 @@ Game images copied from old drawable resources so they can be loaded by libGDX `
 | `bump.ogg` | Collision bump sound used by `checkers_tree` and `sound_test`. |
 | `H_I4_hit2.ogg` | Collision impact variant used by the random sound set in `checkers_tree` and `sound_test`. |
 | `H_I5_hit3.ogg` | Collision impact variant used by the random sound set in `checkers_tree` and `sound_test`. |
+| `slide_take.ogg` | Motion slide clip used by `checkers_tree` and `sound_motion_test`. 0.213 s seamless loop cut from the user's recording `sound_samples/checker_sliding1s.m4a`; pipeline and measurements in `sound_samples/`, clip history in `plans/motion-sound-plan.md`. |
+| `Conversation_sound.txt` | Where the impact clips came from (source pages, license) and the record of every slide clip tried so far, including the two superseded slide samples now kept in `sound_samples/from_shipped/`. |
 
 ## Key agent notes
 
@@ -510,6 +514,6 @@ Game images copied from old drawable resources so they can be loaded by libGDX `
 - **Advanced drawing is approximate.** `Canvas`, `Paint`, `GradientDrawable`, `LightingColorFilter`, `Path`, and clipping/shadow/relief behavior are currently compatibility approximations backed by libGDX.
 - **The active runtime map is `checkers_tree`.** The libGDX launcher provides the map picker.
 - **Other maps remain present as legacy data.** They may require map-schema updates before they can be loaded by the current engine reflection path.
-- **Sound is active.** The `sound` package contains the collision-triggered playback path; collision volume is scaled by `PhysicalShape.collisionSpeed`, `playback = "random"` selects a name from the comma-separated `sounds` set, and `parallelSounds`/`parallelWindow` cap rapid overlapping playbacks per audio component.
+- **Sound is active.** The `sound` package contains the collision-triggered playback path; collision volume is scaled by `PhysicalShape.collisionSpeed`, `playback = "random"` selects a name from the comma-separated `sounds` set, and `parallelSounds`/`parallelWindow` cap rapid overlapping playbacks per audio component. A second `audio` component with `source = "motion"` follows `movement.currentSpeed` instead of a signal: `HandlerSounds` polls it every tick, loops a slide clip while the entity moves, and stops it when the medium brings it to rest, with at most `motionSounds` (hard cap 3) such loops at once.
 - **Keep files UTF-8 (no BOM).** The root Gradle build compiles with `UTF-8`; the legacy cp1251 engine comments and `changelog.txt` have been re-encoded.
 - **Tests exist, but are not enough for rendering/assets.** `:core:test` runs the headless regression suite and `:core:check` adds `:core:lockSelfTest`; visual/platform correctness still needs desktop smoke, APK assembly, and on-device run.

@@ -70,8 +70,15 @@ public class SoundPlayerTest {
 
 		assertEquals(null, Engine.getResources());
 		assertEquals(-1L, SoundPlayer.play("bump", 1.0f));
+		assertEquals(-1L, SoundPlayer.loop("slide", 1.0f));
+
+		SoundPlayer.setVolume("bump", 0L, 0.5f);
+		SoundPlayer.stop("bump", 0L);
 
 		assertTrue(recorder.played.isEmpty());
+		assertTrue(recorder.looped.isEmpty());
+		assertTrue(recorder.volumes.isEmpty());
+		assertTrue(recorder.stopped.isEmpty());
 		assertEquals(0, recorder.requested.size());
 	}
 
@@ -84,5 +91,53 @@ public class SoundPlayerTest {
 		assertTrue(recorder.played.isEmpty());
 		assertEquals(1, recorder.requested.size());
 		assertEquals("missing", recorder.requested.get(0));
+	}
+
+	@Test
+	public void loopResolvesTheSoundNameAndReturnsADeviceHandle() {
+		long id = SoundPlayer.loop("slide", 0.5f);
+
+		assertEquals(0L, id);
+		assertEquals(1, recorder.looped.size());
+		assertEquals("slide", recorder.lastLoopSound());
+		assertEquals(0.5f, recorder.lastLoopVolume(), 0.0001f);
+		assertTrue(recorder.played.isEmpty());
+	}
+
+	@Test
+	public void pins_theLoopVolumeIsClampedOnceMore() {
+		SoundPlayer.loop("slide", 5.0f);
+		assertEquals(1.0f, recorder.lastLoopVolume(), 0.0001f);
+
+		recorder.clear();
+
+		SoundPlayer.loop("slide", -3.0f);
+		assertEquals(0.0f, recorder.lastLoopVolume(), 0.0001f);
+	}
+
+	@Test
+	public void setVolumeAndStopAddressTheHandleThatTheLoopReturned() {
+		long id = SoundPlayer.loop("slide", 0.5f);
+
+		SoundPlayer.setVolume("slide", id, 0.25f);
+		SoundPlayer.stop("slide", id);
+
+		assertEquals(1, recorder.volumes.size());
+		assertEquals(0.25f, recorder.volumes.get(0).volume, 0.0001f);
+		assertEquals(1, recorder.stopped.size());
+		assertEquals(Long.valueOf(id), recorder.stopped.get(0));
+	}
+
+	@Test
+	public void aMissingClipCannotBeLoopedNorStopped() {
+		((SoundTestSupport.RecordingResources) recorder.resources).resolveSounds = false;
+
+		assertEquals(-1L, SoundPlayer.loop("missing", 1.0f));
+		SoundPlayer.setVolume("missing", 7L, 1.0f);
+		SoundPlayer.stop("missing", 7L);
+
+		assertTrue(recorder.looped.isEmpty());
+		assertTrue(recorder.volumes.isEmpty());
+		assertTrue(recorder.stopped.isEmpty());
 	}
 }

@@ -29,10 +29,11 @@ import ru.framework2d.physics.medium.PhysicalMedium;
 /**
  * Batch-local helpers for the sound tests.
  *
- * <p>The only observable output of the whole sound package is
- * {@link SoundPlayer#play(String, float)}, which needs a non-null
- * {@code GameResources}. The real loader reads {@code assets/config.xml} through
- * {@code Gdx.files} in its constructor (GameResources.java:36-38 -> :47-52), which
+ * <p>The only observable output of the whole sound package is the pair of
+ * {@link SoundPlayer} entry points that reach a device: {@code play(String, float)} for a
+ * one-shot sound and {@code loop(String, float)} plus {@code setVolume}/{@code stop} for the
+ * motion sound. Both need a non-null {@code GameResources}. The real loader reads
+ * {@code assets/config.xml} through {@code Gdx.files} in its constructor (GameResources.java:36-38 -> :47-52), which
  * is unusable headless and would pull asset IO into a unit test, so the recorder
  * is an instance of {@link RecordingResources} allocated <b>without running that
  * constructor</b>. Nothing from {@code GameResources} is ever executed: the only
@@ -42,7 +43,8 @@ import ru.framework2d.physics.medium.PhysicalMedium;
  *
  * <p>{@link SoundPlayer} is deliberately passive: rapid-playback limits are owned by
  * {@link HandlerSounds} per component, so tests configure {@code parallelSounds} and
- * {@code parallelWindow} directly.</p>
+ * {@code parallelWindow} directly, and motion sounds are driven by calling
+ * {@link HandlerSounds#updateMotionSounds()} with an explicit movement speed.</p>
  */
 public final class SoundTestSupport {
 
@@ -70,7 +72,7 @@ public final class SoundTestSupport {
 		return recorder;
 	}
 
-	/** One recorded {@code Sound.play(volume)} together with the name it was resolved from. */
+	/** One recorded device call together with the name it was resolved from. */
 	public static final class Play {
 
 		public final String sound;
@@ -98,13 +100,28 @@ public final class SoundTestSupport {
 		/** Every volume that reached a real {@code Sound.play(float)}. */
 		public final List<Play> played = new ArrayList<Play>();
 
+		/** Every volume that reached a real {@code Sound.loop(float)}. */
+		public final List<Play> looped = new ArrayList<Play>();
+
+		/** Every volume that reached a real {@code Sound.setVolume(long, float)}. */
+		public final List<Play> volumes = new ArrayList<Play>();
+
+		/** Every device handle passed to {@code Sound.stop(long)}. */
+		public final List<Long> stopped = new ArrayList<Long>();
+
 		String pendingName = "";
+
+		/** Distinct handle per started playback, so a stop can be traced back to its start. */
+		long nextId;
 
 		Sound proxy;
 
 		public void clear() {
 			requested.clear();
 			played.clear();
+			looped.clear();
+			volumes.clear();
+			stopped.clear();
 			pendingName = "";
 		}
 
@@ -114,6 +131,14 @@ public final class SoundTestSupport {
 
 		public String lastSound() {
 			return played.isEmpty() ? null : played.get(played.size() - 1).sound;
+		}
+
+		public float lastLoopVolume() {
+			return looped.isEmpty() ? Float.NaN : looped.get(looped.size() - 1).volume;
+		}
+
+		public String lastLoopSound() {
+			return looped.isEmpty() ? null : looped.get(looped.size() - 1).sound;
 		}
 	}
 
@@ -165,13 +190,27 @@ public final class SoundTestSupport {
 					new InvocationHandler() {
 						@Override
 						public Object invoke(Object proxy, Method method, Object[] args) {
-							if ("play".equals(method.getName())
+							String called = method.getName();
+
+							if ("play".equals(called)
 									&& args != null && args.length == 1 && args[0] instanceof Float) {
 								recorder.played.add(
 										new Play(recorder.pendingName, ((Float) args[0]).floatValue()));
+							} else if ("loop".equals(called)
+									&& args != null && args.length == 1 && args[0] instanceof Float) {
+								recorder.looped.add(
+										new Play(recorder.pendingName, ((Float) args[0]).floatValue()));
+							} else if ("setVolume".equals(called)
+									&& args != null && args.length == 2 && args[1] instanceof Float) {
+								recorder.volumes.add(
+										new Play(recorder.pendingName, ((Float) args[1]).floatValue()));
+							} else if ("stop".equals(called)
+									&& args != null && args.length == 1 && args[0] instanceof Long) {
+								recorder.stopped.add(((Long) args[0]).longValue());
 							}
+
 							Class<?> returns = method.getReturnType();
-							if (returns == long.class) return Long.valueOf(0L);
+							if (returns == long.class) return Long.valueOf(recorder.nextId++);
 							if (returns == boolean.class) return Boolean.FALSE;
 							if (returns == void.class) return null;
 							if (returns.isPrimitive()) return Integer.valueOf(0);
@@ -197,6 +236,17 @@ public final class SoundTestSupport {
 	public static AudioComponent audio(HandlerSounds handler, Entity entity) {
 		return (AudioComponent) handler.createComponent(
 				entity, tag(AudioComponent.SHORT_CLASS_NAME));
+	}
+
+	/** An audio component that follows the movement of its entity instead of a signal. */
+	public static AudioComponent motionAudio(HandlerSounds handler, Entity entity) {
+		return (AudioComponent) handler.createComponent(entity, tag(AudioComponent.SHORT_CLASS_NAME,
+				"source", SoundTestSupport.textValue("motion")));
+	}
+
+	/** Sets how fast the entity's own shape moves (px per base physics interval). */
+	public static void setMovementSpeed(PhysicalCircle shape, double speed) {
+		shape.movement.currentSpeed.value = speed;
 	}
 
 	/** A signal carrying the very context the audio component listens to. */

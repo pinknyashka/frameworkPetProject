@@ -63,6 +63,9 @@ public class AudioComponentDataTest {
 		assertEquals(0.15f, audio.minVolume.value, 0.0001f);
 		assertEquals(1, audio.parallelSounds.value);
 		assertEquals(50, audio.parallelWindow.value);
+		assertEquals("collision", audio.source.value);
+		assertEquals(0.05f, audio.motionSpeed.value, 0.0001f);
+		assertEquals(3, audio.motionSounds.value);
 		assertNotNull(audio.collision);
 		assertEquals(0, audio.lstData.size());
 	}
@@ -77,7 +80,10 @@ public class AudioComponentDataTest {
 				"fullVolumeSpeed", SoundTestSupport.fractionalValue(4.0f),
 				"minVolume", SoundTestSupport.fractionalValue(0.3f),
 				"parallelSounds", SoundTestSupport.numeralValue(3),
-				"parallelWindow", SoundTestSupport.numeralValue(50));
+				"parallelWindow", SoundTestSupport.numeralValue(50),
+				"source", SoundTestSupport.textValue("motion"),
+				"motionSpeed", SoundTestSupport.fractionalValue(0.5f),
+				"motionSounds", SoundTestSupport.numeralValue(2));
 
 		assertEquals("click", audio.sound.value);
 		assertEquals("a,b,c", audio.sounds.value);
@@ -87,6 +93,9 @@ public class AudioComponentDataTest {
 		assertEquals(0.3f, audio.minVolume.value, 0.0001f);
 		assertEquals(3, audio.parallelSounds.value);
 		assertEquals(50, audio.parallelWindow.value);
+		assertEquals("motion", audio.source.value);
+		assertEquals(0.5f, audio.motionSpeed.value, 0.0001f);
+		assertEquals(2, audio.motionSounds.value);
 	}
 
 	@Test
@@ -185,6 +194,9 @@ public class AudioComponentDataTest {
 		prototype.fullVolumeSpeed.value = 4.0f;
 		prototype.parallelSounds.value = 2;
 		prototype.parallelWindow.value = 75;
+		prototype.source.value = "motion";
+		prototype.motionSpeed.value = 0.4f;
+		prototype.motionSounds.value = 2;
 		Entity copies = SoundTestSupport.entity("copies");
 
 		Component made = prototype.createAutoClone(copies);
@@ -199,7 +211,10 @@ public class AudioComponentDataTest {
 		assertEquals(4.0f, clone.fullVolumeSpeed.value, 0.0001f);
 		assertEquals(2, clone.parallelSounds.value);
 		assertEquals(75, clone.parallelWindow.value);
-		assertEquals(10, clone.lstData.size());
+		assertEquals("motion", clone.source.value);
+		assertEquals(0.4f, clone.motionSpeed.value, 0.0001f);
+		assertEquals(2, clone.motionSounds.value);
+		assertEquals(13, clone.lstData.size());
 		assertEquals("collision", clone.collision.getName());
 		assertSame(prototype.collision.getContext(), clone.collision.getContext());
 		assertFalse(clone.collision == prototype.collision);

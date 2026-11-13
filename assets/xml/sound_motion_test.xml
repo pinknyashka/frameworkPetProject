@@ -1,0 +1,90 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<map version = "1.0" name = "sound motion test" parallel = "false" preview = "checker_preview.png">
+     
+    <direct package = "ru.framework2d.physics" engineName = "IntervalPhysics" 
+        ph_unit = "DisplayWidth/10240" 
+        interval_limit = "70" 
+        impulse_limit = "5">
+        
+        <handler subpackage = "collisions" engineName = "HandlerShapesCollisions">
+            <interaction subpackage = "circles" engineName = "InteractionCircles"/>
+            
+            <context name = "impulse" value = "directImpulse"/>
+            <context name = "isEnabled" value = "exist"/>
+        </handler>
+        
+        <handler subpackage = "medium" engineName = "HandlerMediums">
+            <interaction engineName = "InteractionMediumBody"/>
+            
+            <context name = "isEnabled" value = "exist"/>
+        </handler>
+    </direct>
+    
+    <direct package = "ru.framework2d.sound" engineName = "DirectSound">
+        <handler engineName = "HandlerSounds"/>
+    </direct>
+
+    <direct package = "ru.framework2d.graphics" engineName = "OutputDraw">
+        <handler subpackage = "draw" engineName = "HandlerDraw">
+            <sub subpackage = "sprite" engineName = "SubSpriteDraw"/>
+            <sub engineName = "SubBasicGraphical"/>
+        </handler>
+    </direct>
+    
+    <replace name = "width" value = "DisplayWidth"/>
+    <replace name = "height" value = "DisplayHeight"/>
+    
+    <!-- the medium is what makes a moving body stop: HandlerMediums multiplies the movement speed
+         of every body inside occupiedArea by a slowing factor on every physics pass, and the
+         sliding sound has to notice that stop by itself, because nothing is published when a body
+         comes to rest. this map exists to verify motion audio in a smoke run -->
+    <entity name = "medium_board" single = "true">
+        <surface 
+            position:x = "0" position:y = "0" 
+            size:x = "200" size:y = "200" 
+            slowingEffect = "0.5"/>
+    </entity>
+
+    <!-- four movers inside the medium: each one loops a clip picked at random from the sounds list
+         while its own movement speed is above motionSpeed, and stops it when the medium brings the
+         circle to rest. motionSounds = 3 means the fourth one stays silent until a slot frees -->
+    <entity name = "slide_a">
+        <circle position:x = "-60" position:y = "-48" radius = "4" weight = "0.1" movement:currentSpeed = "4"/>
+        <body roughness = "0.2"/>
+        <audio source = "%smotion" sound = "slide_take" sounds = "%sslide_take" playback = "%srandom" motionSounds = "3" motionSpeed = "0.1" fullVolumeSpeed = "6" minVolume = "0.3" volume = "0.7"/>
+    </entity>
+
+    <entity name = "slide_b">
+        <circle position:x = "60" position:y = "-48" radius = "4" weight = "0.1" movement:currentSpeed = "3" movement:x = "-1"/>
+        <body roughness = "0.2"/>
+        <audio source = "%smotion" sound = "slide_take" sounds = "%sslide_take" playback = "%srandom" motionSounds = "3" motionSpeed = "0.1" fullVolumeSpeed = "6" minVolume = "0.3" volume = "0.7"/>
+    </entity>
+
+    <entity name = "slide_c">
+        <circle position:x = "-60" position:y = "-56" radius = "4" weight = "0.1" movement:currentSpeed = "2"/>
+        <body roughness = "0.2"/>
+        <audio source = "%smotion" sound = "slide_take" sounds = "%sslide_take" playback = "%srandom" motionSounds = "3" motionSpeed = "0.1" fullVolumeSpeed = "6" minVolume = "0.3" volume = "0.7"/>
+    </entity>
+
+    <entity name = "slide_d">
+        <circle position:x = "60" position:y = "-56" radius = "4" weight = "0.1" movement:currentSpeed = "5" movement:x = "-1"/>
+        <body roughness = "0.2"/>
+        <audio source = "%smotion" sound = "slide_take" sounds = "%sslide_take" playback = "%srandom" motionSounds = "3" motionSpeed = "0.1" fullVolumeSpeed = "6" minVolume = "0.3" volume = "0.7"/>
+    </entity>
+
+    <!-- never moves, so its motion audio must stay completely silent -->
+    <entity name = "slide_still">
+        <circle position:x = "0" position:y = "-64" radius = "4" weight = "0.1"/>
+        <body roughness = "0.2"/>
+        <audio source = "%smotion" sound = "slide_take" sounds = "%sslide_take" playback = "%srandom" motionSounds = "3" motionSpeed = "0.1" fullVolumeSpeed = "6" minVolume = "0.3" volume = "0.7"/>
+    </entity>
+
+    <!-- outside the medium, so the medium never slows it down: this one keeps sliding, and starts
+         only after one of the capped movers stops and gives up its slot -->
+    <entity name = "slide_free">
+        <circle position:x = "300" position:y = "300" radius = "4" weight = "0.1" movement:currentSpeed = "3"/>
+        <body roughness = "0.2"/>
+        <audio source = "%smotion" sound = "slide_take" sounds = "%sslide_take" playback = "%srandom" motionSounds = "3" motionSpeed = "0.1" fullVolumeSpeed = "6" minVolume = "0.3" volume = "0.7"/>
+    </entity>
+
+</map>

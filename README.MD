@@ -158,11 +158,13 @@ The `:core` module has a headless JUnit regression suite (`:core:test`) plus the
 The `core/src/ru/framework2d/sound/` package contains the active sound subsystem:
 
 - `DirectSound` — the sound engine node used from map files.
-- `HandlerSounds` — plays collision-triggered audio.
-- `AudioComponent` — the `audio` component; defines `sound`, `sounds`, `playback`, `volume`, `fullVolumeSpeed`, `minVolume`, `parallelSounds`, and `parallelWindow`.
-- `SoundPlayer` — playback helper backed by `GameResources.getSound(...)` and libGDX `Sound`.
+- `HandlerSounds` — plays collision-triggered audio and polls motion-driven audio once per engine tick.
+- `AudioComponent` — the `audio` component; defines `source`, `sound`, `sounds`, `playback`, `volume`, `fullVolumeSpeed`, `minVolume`, `parallelSounds`, `parallelWindow`, `motionSpeed`, and `motionSounds`.
+- `SoundPlayer` — playback helper backed by `GameResources.getSound(...)` and libGDX `Sound`: `play`, `loop`, `setVolume`, `stop`.
 
-Collision audio is triggered through `PhysicalShape.collision` and scaled by `PhysicalShape.collisionSpeed`: faster relative impact speed plays louder, down to `minVolume` for slow hits. A random collision sound set can be defined in map XML with `sounds = "%sname1,name2"` and `playback = "%srandom"`; otherwise `sound` is played. Rapid collision sounds are limited per audio component: `parallelWindow = "50"` and `parallelSounds = "3"` allow up to three playbacks started within 50 ms, while `parallelSounds = "1"` keeps a simple repeat window and `parallelWindow = "0"` disables it. `assets/xml/sound_test.xml` is a smoke map for verifying this behavior with `--smoke --map=sound_test`.
+Collision audio (`source = "%scollision"`, the default) is triggered through `PhysicalShape.collision` and scaled by `PhysicalShape.collisionSpeed`: faster relative impact speed plays louder, down to `minVolume` for slow hits. A random collision sound set can be defined in map XML with `sounds = "%sname1,name2"` and `playback = "%srandom"`; otherwise `sound` is played. Rapid collision sounds are limited per audio component: `parallelWindow = "50"` and `parallelSounds = "3"` allow up to three playbacks started within 50 ms, while `parallelSounds = "1"` keeps a simple repeat window and `parallelWindow = "0"` disables it. `assets/xml/sound_test.xml` is a smoke map for verifying this behavior with `--smoke --map=sound_test`.
+
+Motion audio (`source = "%smotion"`) follows the entity instead of a signal: `HandlerSounds` polls the component every engine tick, starts a looping `sound`/random `sounds` clip while `movement.currentSpeed` of the entity stays at or above `motionSpeed`, re-ramps the running volume from the same `fullVolumeSpeed`/`minVolume` curve while the entity moves, and stops the loop when the entity stops. The polling is required because the physics engine slows a body to rest (a `<surface>` medium, `HandlerMediums`) without publishing anything. At most `motionSounds` entities of that kind sound at the same time, hard-capped at three; a stopped checker hands its slot to the next mover. One entity may carry both kinds, which is how a checker gets an impact thud and a slide at the same time. `assets/xml/sound_motion_test.xml` is the smoke map for it: `--smoke --map=sound_motion_test`, and set `-Dframework2d.log.debug=true` to see the `[Sound]` `loop`/`stop` lines.
 
 ## Gotchas
 
