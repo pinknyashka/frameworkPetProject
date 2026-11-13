@@ -31,6 +31,13 @@ public class HandlerUnitClasses extends ComponentsHandler implements TurnRules {
 	public boolean actionOpen = false;
 	private boolean roundResetPending = false;
 
+	/**
+	 * Desk exits of the acting player's own checkers during the open action. Any of them is "the
+	 * mistake": the turn always passes to the next player, whatever class bonus the attack earned.
+	 */
+	private int ownerExitsThisAction = 0;
+	private String ownerExitUnitName = "";
+
 	public final ArrayList <UnitClass> activationCandidates = new ArrayList <UnitClass>();
 	private final ArrayList <UnitClass> delayedReturns = new ArrayList <UnitClass>();
 	private HandlerPlayers playersHandler = null;
@@ -113,6 +120,15 @@ public class HandlerUnitClasses extends ComponentsHandler implements TurnRules {
 		UnitClass acting = lastActedUnit;
 		if (!belongsTo(acting, justActed.name.value)) return null;
 
+		//the loss penalty comes before every class bonus: losing any of his own checkers during
+		//the action ends the turn, even when the attack itself qualified for a follow-up move
+		if (ownerExitsThisAction > 0) {
+			Log.i(LOG_TAG, name + ": turn: " + justActed.name.value + " penalty, own checker "
+					+ ownerExitUnitName + " left the desk during the action (exits "
+					+ ownerExitsThisAction + "); turn passes;");
+			return null;
+		}
+
 		if (acting instanceof Cavalry) return keepCavalryTurn(acting, justActed);
 		if (acting instanceof Minigun) return keepMinigunTurn(acting, justActed);
 		return keepKillBasedTurn(acting, justActed);
@@ -137,6 +153,8 @@ public class HandlerUnitClasses extends ComponentsHandler implements TurnRules {
 		actionOpen = false;
 		lastActedUnit = null;
 		actionOwnerName = "";
+		ownerExitsThisAction = 0;
+		ownerExitUnitName = "";
 
 		Log.i(LOG_TAG, name + ": class combat state reset after round end"
 				+ (player == null ? "" : " for " + player.name.value)
@@ -225,6 +243,8 @@ public class HandlerUnitClasses extends ComponentsHandler implements TurnRules {
 		actionOpen = false;
 		lastActedUnit = null;
 		actionOwnerName = "";
+		ownerExitsThisAction = 0;
+		ownerExitUnitName = "";
 	}
 
 	@Override
@@ -418,9 +438,14 @@ public class HandlerUnitClasses extends ComponentsHandler implements TurnRules {
 		lastActedUnit = unit;
 		actionOwnerName = ownerNameOf(unit);
 
+		openOwnersTurnAction(unit);
+
 		for (UnitClass other : lstUnitClasses) {
 			other.exitProcessedThisAction = false;
 		}
+
+		ownerExitsThisAction = 0;
+		ownerExitUnitName = "";
 
 		updateCurrentCell(unit);
 		updateReturnSpot(unit);
@@ -441,6 +466,28 @@ public class HandlerUnitClasses extends ComponentsHandler implements TurnRules {
 				+ " pos=(" + unit.position.x.value + ", " + unit.position.y.value + ")"
 				+ suffix + ";");
 		return true;
+	}
+
+	/**
+	 * The shot is the action: the acting player's turn is opened here, so the turn closes when the
+	 * board settles whatever the touch layer reports afterwards and even when no checker leaves the
+	 * battlefield.
+	 */
+	private void openOwnersTurnAction(UnitClass unit) {
+		if (playersHandler == null) {
+			Log.w(LOG_TAG, name + ": turn: no HandlerPlayers in this map; the action of "
+					+ unit.entity.name + " cannot open a turn;");
+			return;
+		}
+
+		LogicalOwnership ownership = ownershipOf(unit.entity);
+		if (ownership == null || ownership.owner == null) {
+			Log.w(LOG_TAG, name + ": turn: " + unit.entity.name
+					+ " has no resolved owner; the action cannot open a turn;");
+			return;
+		}
+
+		playersHandler.openTurnAction(ownership.owner);
 	}
 
 	private void recordAttack(UnitClass unit) {
@@ -495,6 +542,7 @@ public class HandlerUnitClasses extends ComponentsHandler implements TurnRules {
 		unit.exitProcessedThisAction = true;
 		recordEnemyDeskExit(unit);
 		spendDurability(unit);
+		recordOwnerDeskExitPenalty(unit);
 
 		if (canReturnToDesk(unit)) {
 			queueDelayedReturn(unit);
@@ -614,6 +662,31 @@ public class HandlerUnitClasses extends ComponentsHandler implements TurnRules {
 		Log.i(LOG_TAG, name + ": class enemy knocked off the desk: " + unit.entity.name
 				+ " durability " + unit.durabilitySpent + "/" + unit.hitsToDestroy.value
 				+ "; knock counted for " + lastActedUnit.entity.name + ";");
+	}
+
+	/**
+	 * Marks the acting player's own desk exit as the mistake that ends his turn. Every exit counts,
+	 * including a survivable one that returns to the desk later: leaving the battlefield is what the
+	 * player is penalised for, not only losing the checker for good.
+	 */
+	private void recordOwnerDeskExitPenalty(UnitClass unit) {
+		if (!actionOpen || lastActedUnit == null) {
+			Log.d(LOG_TAG, name + ": class exit penalty skipped: " + unit.entity.name
+					+ " left the desk outside an action;");
+			return;
+		}
+
+		String exitedOwner = ownerNameOf(unit);
+		if (exitedOwner.length() == 0) return;
+		if (!exitedOwner.contentEquals(actionOwnerName)) return;
+
+		ownerExitsThisAction++;
+		ownerExitUnitName = unit.entity.name;
+
+		Log.i(LOG_TAG, name + ": class exit penalty: " + unit.entity.name
+				+ " belongs to action owner " + actionOwnerName
+				+ " durability=" + unit.durabilitySpent + "/" + unit.hitsToDestroy.value
+				+ " own exits this action=" + ownerExitsThisAction + ";");
 	}
 
 	private void updateReturnSpot(UnitClass unit) {
@@ -859,6 +932,8 @@ public class HandlerUnitClasses extends ComponentsHandler implements TurnRules {
 
 		LogicalOwnership ownership = ownershipOf(unit.entity);
 		if (ownership == null) return;
+		//HandlerPlayers forces the state through when it hands the turn over (see its
+		//setControlled(ownership, controlled, force)), so an unchanged value here is already mirrored
 		if (ownership.isControlled.value == controlled) return;
 
 		ownership.isControlled.value = controlled;

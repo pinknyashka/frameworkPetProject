@@ -119,6 +119,23 @@ public class HandlerUnitClassesTest {
 	}
 
 	@Test
+	public void shotOpensTheActingPlayersTurnSoTheSettledBoardClosesTheTurn() {
+		LogicalPlayer p1 = player("p1");
+		LogicalPlayer p2 = player("p2");
+
+		Entity white = new Entity("white");
+		ownership(white, p1.name.value);
+		UnitClass whiteClass = infantry(white);
+
+		assertFalse(p1.turnActionPending);
+
+		classes.transferData(white, signal(new Vector2(1, 0), whiteClass.actionStarted));
+
+		assertTrue("the shot itself must open the turn action of the owner", p1.turnActionPending);
+		assertFalse(p2.turnActionPending);
+	}
+
+	@Test
 	public void anEnemyExitDuringTheActionCountsOneKill() {
 		LogicalPlayer p1 = player("p1");
 		player("p2");
@@ -158,6 +175,158 @@ public class HandlerUnitClassesTest {
 
 		assertEquals(0, whiteClass.enemiesDestroyed.value);
 		assertFalse(friendlyClass.remainsOnBoard.value);
+	}
+
+	@Test
+	public void ownCheckerExitPassesTheTurnEvenWhenTheAttackEarnedABonus() {
+		LogicalPlayer p1 = player("p1");
+		player("p2");
+
+		Entity white = new Entity("white");
+		Entity adjacent = new Entity("adjacent");
+		Entity friendly = new Entity("friendly");
+		LogicalOwnership whiteOwnership = ownership(white, p1.name.value);
+		LogicalOwnership adjacentOwnership = ownership(adjacent, p1.name.value);
+		LogicalOwnership friendlyOwnership = ownership(friendly, p1.name.value);
+
+		UnitClass whiteClass = infantry(white);
+		UnitClass adjacentClass = infantry(adjacent);
+		UnitClass friendlyClass = infantry(friendly);
+		shareBoardContext(whiteClass, whiteOwnership);
+		shareBoardContext(adjacentClass, adjacentOwnership);
+		shareBoardContext(friendlyClass, friendlyOwnership);
+
+		whiteClass.cellColumn = 3;
+		whiteClass.cellRow = 4;
+		adjacentClass.cellColumn = 4;
+		adjacentClass.cellRow = 4;
+
+		classes.transferData(white, signal(new Vector2(), whiteClass.actionStarted));
+
+		Entity enemy = new Entity("enemy");
+		LogicalOwnership enemyOwnership = ownership(enemy, "p2");
+		UnitClass enemyClass = infantry(enemy);
+		shareBoardContext(enemyClass, enemyOwnership);
+		classes.transferData(enemy, signal(new Bool(false), enemyClass.remainsOnBoard));
+
+		//same setup as infantryKeepsTheTurnOnlyForUnactedAdjacentUnits, plus one of p1's own
+		//checkers knocked off the desk: the kill bonus is lost, the turn passes
+		classes.transferData(friendly, signal(new Bool(false), friendlyClass.remainsOnBoard));
+
+		assertEquals(1, whiteClass.enemiesDestroyed.value);
+		assertFalse(friendlyClass.remainsOnBoard.value);
+		assertNull(classes.keepTurnPlayer(p1, players.lstPlayers));
+	}
+
+	@Test
+	public void ownSurvivableExitPassesTheTurnAfterTheDelayedReturn() {
+		LogicalPlayer p1 = player("p1");
+		player("p2");
+
+		Entity gun = new Entity("gun");
+		ownership(gun, p1.name.value);
+		UnitClass gunClass = minigun(gun);
+
+		Entity ally = new Entity("ally");
+		LogicalOwnership allyOwnership = ownership(ally, p1.name.value);
+		UnitClass allyClass = minigun(ally);
+		shareBoardContext(allyClass, allyOwnership);
+
+		classes.transferData(gun, signal(new Vector2(), gunClass.actionStarted));
+
+		for (int i = 0; i < 2; i++) {
+			Entity enemy = new Entity("enemy" + i);
+			LogicalOwnership enemyOwnership = ownership(enemy, "p2");
+			UnitClass enemyClass = infantry(enemy);
+			shareBoardContext(enemyClass, enemyOwnership);
+			classes.transferData(enemy, signal(new Bool(false), enemyClass.remainsOnBoard));
+		}
+
+		classes.transferData(ally, signal(new Bool(false), allyClass.remainsOnBoard));
+		classes.movementStopped(p1);
+
+		assertEquals(2, gunClass.enemiesDestroyed.value);
+		assertTrue(allyClass.remainsOnBoard.value);
+		assertFalse(allyClass.destroyed);
+		assertNull(classes.keepTurnPlayer(p1, players.lstPlayers));
+	}
+
+	@Test
+	public void actingUnitSurvivableExitPassesTheTurn() {
+		LogicalPlayer p1 = player("p1");
+		player("p2");
+
+		Entity gun = new Entity("gun");
+		LogicalOwnership gunOwnership = ownership(gun, p1.name.value);
+		UnitClass gunClass = minigun(gun);
+		shareBoardContext(gunClass, gunOwnership);
+
+		classes.transferData(gun, signal(new Vector2(), gunClass.actionStarted));
+
+		for (int i = 0; i < 2; i++) {
+			Entity enemy = new Entity("enemy" + i);
+			LogicalOwnership enemyOwnership = ownership(enemy, "p2");
+			UnitClass enemyClass = infantry(enemy);
+			shareBoardContext(enemyClass, enemyOwnership);
+			classes.transferData(enemy, signal(new Bool(false), enemyClass.remainsOnBoard));
+		}
+
+		classes.transferData(gun, signal(new Bool(false), gunClass.remainsOnBoard));
+		classes.movementStopped(p1);
+
+		assertEquals(2, gunClass.enemiesDestroyed.value);
+		assertTrue(gunClass.remainsOnBoard.value);
+		assertFalse(gunClass.destroyed);
+		assertNull(classes.keepTurnPlayer(p1, players.lstPlayers));
+	}
+
+	@Test
+	public void lossPenaltyIsClearedForTheNextAction() {
+		LogicalPlayer p1 = player("p1");
+		player("p2");
+
+		Entity gun = new Entity("gun");
+		ownership(gun, p1.name.value);
+		UnitClass gunClass = minigun(gun);
+
+		Entity ally = new Entity("ally");
+		LogicalOwnership allyOwnership = ownership(ally, p1.name.value);
+		UnitClass allyClass = minigun(ally);
+		shareBoardContext(allyClass, allyOwnership);
+
+		Entity firstEnemy = new Entity("first-enemy");
+		LogicalOwnership firstEnemyOwnership = ownership(firstEnemy, "p2");
+		UnitClass firstEnemyClass = infantry(firstEnemy);
+		shareBoardContext(firstEnemyClass, firstEnemyOwnership);
+
+		//action 1: one kill and one of p1's own checkers off the desk
+		classes.transferData(gun, signal(new Vector2(), gunClass.actionStarted));
+		classes.transferData(firstEnemy, signal(new Bool(false), firstEnemyClass.remainsOnBoard));
+		classes.transferData(ally, signal(new Bool(false), allyClass.remainsOnBoard));
+
+		assertNull(classes.keepTurnPlayer(p1, players.lstPlayers));
+
+		//action 2: two kills and no own exit, so the Minigun bonus is available again
+		UnitClass firstFreshEnemy = enemyOfClass("fresh-enemy-0", "p2");
+		UnitClass secondFreshEnemy = enemyOfClass("fresh-enemy-1", "p2");
+
+		classes.onTurnStarted(p1);
+		classes.transferData(gun, signal(new Vector2(), gunClass.actionStarted));
+		classes.transferData(firstFreshEnemy.entity,
+				signal(new Bool(false), firstFreshEnemy.remainsOnBoard));
+		classes.transferData(secondFreshEnemy.entity,
+				signal(new Bool(false), secondFreshEnemy.remainsOnBoard));
+
+		assertEquals(2, gunClass.enemiesDestroyed.value);
+		assertSame(p1, classes.keepTurnPlayer(p1, players.lstPlayers));
+	}
+
+	private UnitClass enemyOfClass(String entityName, String ownerName) {
+		Entity enemy = new Entity(entityName);
+		LogicalOwnership enemyOwnership = ownership(enemy, ownerName);
+		UnitClass enemyClass = infantry(enemy);
+		shareBoardContext(enemyClass, enemyOwnership);
+		return enemyClass;
 	}
 
 	@Test
@@ -880,6 +1049,58 @@ public class HandlerUnitClassesTest {
 		assertTrue(adjacentOwnership.isControlled.value);
 		assertFalse(whiteOwnership.isControlled.value);
 		assertFalse(farOwnership.isControlled.value);
+	}
+
+	@Test
+	public void ownCheckerExitPassesTheTurnThroughHandlerPlayers() {
+		LogicalPlayer p1 = player("p1");
+		LogicalPlayer p2 = player("p2");
+		p2.gotAccess.value = false;
+		p2.isInProgress.value = false;
+
+		Entity white = new Entity("white");
+		Entity adjacent = new Entity("adjacent");
+		Entity friendly = new Entity("friendly");
+		LogicalOwnership whiteOwnership = ownership(white, p1.name.value);
+		LogicalOwnership adjacentOwnership = ownership(adjacent, p1.name.value);
+		LogicalOwnership friendlyOwnership = ownership(friendly, p1.name.value);
+
+		UnitClass whiteClass = infantry(white);
+		UnitClass adjacentClass = infantry(adjacent);
+		UnitClass friendlyClass = infantry(friendly);
+		shareBoardContext(whiteClass, whiteOwnership);
+		shareBoardContext(adjacentClass, adjacentOwnership);
+		shareBoardContext(friendlyClass, friendlyOwnership);
+
+		whiteClass.cellColumn = 3;
+		whiteClass.cellRow = 4;
+		adjacentClass.cellColumn = 4;
+		adjacentClass.cellRow = 4;
+
+		Entity enemy = new Entity("enemy");
+		LogicalOwnership enemyOwnership = ownership(enemy, "p2");
+		UnitClass enemyClass = infantry(enemy);
+		shareBoardContext(enemyClass, enemyOwnership);
+
+		Entity otherEnemy = new Entity("other-enemy");
+		LogicalOwnership otherEnemyOwnership = ownership(otherEnemy, "p2");
+
+		classes.transferData(white, signal(new Vector2(), whiteClass.actionStarted));
+		classes.transferData(enemy, signal(new Bool(false), enemyClass.remainsOnBoard));
+
+		//the kill would normally grant p1 a follow-up move with the adjacent unit, but the same
+		//shot also knocked p1's own friendly checker off the desk
+		classes.transferData(friendly, signal(new Bool(false), friendlyClass.remainsOnBoard));
+
+		players.transferData(whiteOwnership.entity, signal(new Bool(false), whiteOwnership.isCurrentlyControlled));
+		players.transferData(p1.entity, signal(new Bool(false), p1.isInProgress));
+
+		assertFalse(p1.isInProgress.value);
+		assertTrue(p2.isInProgress.value);
+		assertFalse(p1.turnActionPending);
+
+		assertFalse(adjacentOwnership.isControlled.value);
+		assertTrue(otherEnemyOwnership.isControlled.value);
 	}
 
 	@Test

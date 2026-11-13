@@ -396,7 +396,9 @@ public class HandlerPlayers extends ComponentsHandler {
 		player.isInProgress.value = true;
 
 		for (LogicalOwnership ownershipItem : player.lstOwnership) {
-			setControlled(ownershipItem, ownershipItem.isExist.value);
+			//force: the new player's checkers must become clickable even if the recorded control
+			//state already said true while the map marked them not clickable
+			setControlled(ownershipItem, ownershipItem.isExist.value, true);
 		}
 		
 		for (int i = 1; i < lstPlayers.size(); i++) {
@@ -407,12 +409,28 @@ public class HandlerPlayers extends ComponentsHandler {
 				nextPlayer.gotAccess.value = false;
 				nextPlayer.isInProgress.value = false;
 				for (LogicalOwnership ownershipItem : nextPlayer.lstOwnership) {
-					setControlled(ownershipItem, false);
+					setControlled(ownershipItem, false, true);
 				}
 			}
 		}
 	}
 	
+	/**
+	 * Opens "player"'s turn action: the turn must close when the field reports that every unit
+	 * settled, even if no checker leaves the battlefield. The shot itself opens the action (see
+	 * {@code HandlerUnitClasses}); releasing the selected unit opens it as well
+	 * (see the isCurrentlyControlled branch of transferData).
+	 */
+	public void openTurnAction(LogicalPlayer player) {
+		if (player == null) return;
+
+		player.turnActionPending = true;
+		Log.i(LOG_TAG, name + ": turn: " + player.name.value
+				+ " action opened (active ownership " + player.lstActiveOwnership.size() + "/"
+				+ player.lstOwnership.size() + "; wait for turn over "
+				+ player.isWaitForTurnOver.value + ");");
+	}
+
 	private String activeOwnershipSummary() {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < lstPlayers.size(); i++) {
@@ -432,15 +450,39 @@ public class HandlerPlayers extends ComponentsHandler {
 	}
 
 	private void setControlled(LogicalOwnership ownership, boolean controlled) {
+		setControlled(ownership, controlled, false);
+	}
+
+	/**
+	 * Sets the control state of one ownership and commits it to its mirrors.
+	 *
+	 * {@code force} commits even when the value did not change. A hand over must force it: the
+	 * clickability of a unit ({@code d_touch.isClikable}) is a mirror of {@code ownership.isControlled}
+	 * through the shared context, and a map may initialise the two differently -
+	 * assets/xml/checkers_tree.xml starts the waiting player's checkers with isClikable = "false" while
+	 * isControlled defaults to true. A hand over that only reacted to a change would leave the new
+	 * player's checkers unclickable while the previous player's are already unclickable, which looks
+	 * like a turn that never passed.
+	 */
+	private void setControlled(LogicalOwnership ownership, boolean controlled, boolean force) {
 		if (ownership == null || ownership.owner == null) return;
-		if (ownership.isControlled.value == controlled) return;
+
+		boolean changed = ownership.isControlled.value != controlled;
+		if (!changed && !force) return;
 
 		ownership.isControlled.value = controlled;
 		ownership.isControlled.commit(this, ownership.entity);
-		Log.i(LOG_TAG, name + ": control: " + ownership.owner.name.value + "." + ownership.entity.name
-				+ " controlled=" + controlled
-				+ " exists=" + ownership.isExist.value
-				+ " inProgress=" + ownership.owner.isInProgress.value + ";");
+
+		if (changed) {
+			Log.i(LOG_TAG, name + ": control: " + ownership.owner.name.value + "." + ownership.entity.name
+					+ " controlled=" + controlled
+					+ " exists=" + ownership.isExist.value
+					+ " inProgress=" + ownership.owner.isInProgress.value + ";");
+		} 
+		else {
+			Log.d(LOG_TAG, name + ": control: " + ownership.owner.name.value + "." + ownership.entity.name
+					+ " controlled=" + controlled + " re-pushed;");
+		}
 	}
 
 	private boolean otherPlayersGotPoints(LogicalPlayer player) {
