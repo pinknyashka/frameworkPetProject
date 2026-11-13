@@ -22,8 +22,8 @@ import ru.framework2d.touches.TouchPeriphery;
 
 import ru.framework2d.gdx.TouchBridge;
 
-import ru.fungames.checkers.launcher.BackToMenuButton;
 import ru.fungames.checkers.launcher.LauncherScreen;
+import ru.fungames.checkers.launcher.OverlayButton;
 
 public class CheckersGame extends Game {
 
@@ -52,13 +52,32 @@ public class CheckersGame extends Game {
     /** When true, the auto-select helper opens the about screen instead of a map list (smoke helper). */
     public boolean launcherAutoOpenAbout;
 
+    /** When true, the auto-select helper opens the settings screen (smoke helper). */
+    public boolean launcherAutoOpenSettings;
+
     /** When > 0, a synthetic tap on the in-game back button fires after this many frames (smoke helper). */
     public int backSmokeAfterFrames;
 
+    /** When > 0, a synthetic tap opens the settings overlay, which then auto-closes again (smoke helper). */
+    public int settingsSmokeAfterFrames;
+
+    /** Game-screen overlay buttons: same art, size and aspect as the launcher's back button. */
+    private static final float OVERLAY_LEFT = 12f;
+    private static final float OVERLAY_TOP = 12f;
+    private static final float OVERLAY_WIDTH = 105f;
+    private static final float OVERLAY_HEIGHT = 40f;
+    private static final float OVERLAY_GAP = 9f;
+    /** How long the settings overlay stays open in the smoke sequence before auto-close. */
+    private static final int SETTINGS_SMOKE_CLOSE_AFTER = 40;
+
     private LauncherScreen launcher;
-    private BackToMenuButton backToMenuButton;
+    private OverlayButton backToMenuButton;
+    private OverlayButton settingsButton;
     private GameInputProcessor gameInputProcessor;
     private boolean gameStarted;
+    /** True while the launcher's settings screen is drawn over a running (undrawn, unticked) game. */
+    private boolean settingsOverlay;
+    private int settingsSmokeCloseAtFrames;
 
     private GameCore core;
     private GraphicalPeriphery periphery;
@@ -94,12 +113,23 @@ public class CheckersGame extends Game {
                         public void onMapChosen(String chosenMapName) {
                             startGame(chosenMapName);
                         }
+
+                        @Override
+                        public void onSettingsClosed() {
+                            resumeFromSettings();
+                        }
                     }, DEFAULT_MAP, launcherLastMap());
             // Only meaningful when there is a menu to go back to; direct-to-map runs have none.
-            backToMenuButton = new BackToMenuButton(new ru.framework2d.core.GameResources());
+            ru.framework2d.core.GameResources overlayResources =
+                    new ru.framework2d.core.GameResources();
+            backToMenuButton = new OverlayButton(overlayResources, "< Back", OVERLAY_LEFT,
+                    OVERLAY_TOP, OVERLAY_WIDTH, OVERLAY_HEIGHT);
+            settingsButton = new OverlayButton(overlayResources, "Settings",
+                    OVERLAY_LEFT + OVERLAY_WIDTH + OVERLAY_GAP, OVERLAY_TOP, OVERLAY_WIDTH,
+                    OVERLAY_HEIGHT);
             launcher.setAutoSelectMapAfterFrames(launcherAutoSelectAfterFrames,
                     launcherAutoSelectMap, launcherAutoSelectTests, launcherAutoScrollPixels,
-                    launcherAutoOpenAbout);
+                    launcherAutoOpenAbout, launcherAutoOpenSettings);
             Gdx.input.setInputProcessor(launcher);
             Gdx.app.log("framework2d", "launcher shown; lastMap=" + launcherLastMap() + ";");
         } else {
@@ -152,6 +182,11 @@ public class CheckersGame extends Game {
         if (backToMenuButton != null) {
             backToMenuButton.setPressed(false);
         }
+        if (settingsButton != null) {
+            settingsButton.setPressed(false);
+        }
+        settingsOverlay = false;
+        settingsSmokeCloseAtFrames = 0;
         if (launcher != null) {
             launcher.setLastPlayedMap(mapName);
             Gdx.input.setInputProcessor(launcher);
@@ -187,7 +222,11 @@ public class CheckersGame extends Game {
         }
 
         camera.update();
-        if (gameStarted && periphery != null) {
+        if (gameStarted && settingsOverlay) {
+            // Opaque launcher screen over the game: the game is not drawn, and since the engine
+            // ticks from its draw call, it is paused for the duration of the settings screen.
+            renderLauncher();
+        } else if (gameStarted && periphery != null) {
             renderGame();
         } else if (!gameStarted && launcher != null) {
             renderLauncher();
@@ -226,6 +265,9 @@ public class CheckersGame extends Game {
             batch.setProjectionMatrix(camera.combined);
             batch.begin();
             backToMenuButton.draw(canvas);
+            if (settingsButton != null) {
+                settingsButton.draw(canvas);
+            }
             batch.end();
         }
 
@@ -239,17 +281,31 @@ public class CheckersGame extends Game {
                 gameInputProcessor.touchUp(x, y, 0, 0);
             }
         }
+
+        if (settingsSmokeAfterFrames > 0 && frames >= settingsSmokeAfterFrames) {
+            settingsSmokeAfterFrames = 0;
+            if (settingsButton != null && gameInputProcessor != null) {
+                int x = (int) settingsButton.centerX();
+                int y = (int) settingsButton.centerY();
+                Gdx.app.log("framework2d", "smoke: tapping the in-game settings button;");
+                gameInputProcessor.touchDown(x, y, 0, 0);
+                gameInputProcessor.touchUp(x, y, 0, 0);
+                settingsSmokeCloseAtFrames = frames + SETTINGS_SMOKE_CLOSE_AFTER;
+            }
+        }
     }
 
     /**
-     * Input for the running game: a gesture that starts on the back button is fully owned here
-     * (the engine never sees a half-tap under the button), everything else goes to the map's
-     * touch pipeline. With no touch engine in the map the bridge is null and only the button acts.
+     * Input for the running game: a gesture that starts on an overlay button is fully owned
+     * here (the engine never sees a half-tap under the button), everything else goes to the
+     * map's touch pipeline. With no touch engine in the map the bridge is null and only the
+     * buttons act.
      */
     private final class GameInputProcessor extends com.badlogic.gdx.InputAdapter {
 
         private final TouchBridge bridge;
-        private int buttonPointer = -1;
+        private int backPointer = -1;
+        private int settingsPointer = -1;
 
         GameInputProcessor(TouchBridge bridge) {
             this.bridge = bridge;
@@ -257,9 +313,14 @@ public class CheckersGame extends Game {
 
         @Override
         public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-            if (isOnBackButton(screenX, screenY)) {
-                buttonPointer = pointer;
+            if (isOn(backToMenuButton, screenX, screenY)) {
+                backPointer = pointer;
                 backToMenuButton.setPressed(true);
+                return true;
+            }
+            if (isOn(settingsButton, screenX, screenY)) {
+                settingsPointer = pointer;
+                settingsButton.setPressed(true);
                 return true;
             }
             return bridge != null && bridge.touchDown(screenX, screenY, pointer, button);
@@ -267,7 +328,7 @@ public class CheckersGame extends Game {
 
         @Override
         public boolean touchDragged(int screenX, int screenY, int pointer) {
-            if (pointer == buttonPointer) {
+            if (pointer == backPointer || pointer == settingsPointer) {
                 return true;
             }
             return bridge != null && bridge.touchDragged(screenX, screenY, pointer);
@@ -275,11 +336,19 @@ public class CheckersGame extends Game {
 
         @Override
         public boolean touchUp(int screenX, int screenY, int pointer, int button) {
-            if (pointer == buttonPointer) {
-                buttonPointer = -1;
+            if (pointer == backPointer) {
+                backPointer = -1;
                 backToMenuButton.setPressed(false);
-                if (isOnBackButton(screenX, screenY)) {
+                if (isOn(backToMenuButton, screenX, screenY)) {
                     returnToMenu();
+                }
+                return true;
+            }
+            if (pointer == settingsPointer) {
+                settingsPointer = -1;
+                settingsButton.setPressed(false);
+                if (isOn(settingsButton, screenX, screenY)) {
+                    openSettingsFromGame();
                 }
                 return true;
             }
@@ -288,17 +357,46 @@ public class CheckersGame extends Game {
 
         @Override
         public boolean touchCancelled(int screenX, int screenY, int pointer, int button) {
-            if (pointer == buttonPointer) {
-                buttonPointer = -1;
+            if (pointer == backPointer) {
+                backPointer = -1;
                 backToMenuButton.setPressed(false);
+                return true;
+            }
+            if (pointer == settingsPointer) {
+                settingsPointer = -1;
+                settingsButton.setPressed(false);
                 return true;
             }
             return bridge != null && bridge.touchCancelled(screenX, screenY, pointer, button);
         }
 
-        private boolean isOnBackButton(int screenX, int screenY) {
-            return backToMenuButton != null && backToMenuButton.contains(screenX, screenY);
+        private boolean isOn(OverlayButton button, int screenX, int screenY) {
+            return button != null && button.contains(screenX, screenY);
         }
+    }
+
+    /**
+     * Opens the launcher's settings screen over the running game. The game stops being drawn,
+     * which also stops it ticking (the engine advances from its draw call); its state survives.
+     */
+    private void openSettingsFromGame() {
+        if (launcher == null) {
+            return;
+        }
+        settingsOverlay = true;
+        launcher.openSettingsOverlay();
+        Gdx.input.setInputProcessor(launcher);
+        Gdx.app.log("framework2d", "settings opened over the game;");
+    }
+
+    /** The settings screen was left via its back control: hand input back to the resumed game. */
+    private void resumeFromSettings() {
+        if (!settingsOverlay) {
+            return;
+        }
+        settingsOverlay = false;
+        Gdx.input.setInputProcessor(gameInputProcessor);
+        Gdx.app.log("framework2d", "settings closed; game resumed;");
     }
 
     private void renderLauncher() {
@@ -308,6 +406,17 @@ public class CheckersGame extends Game {
         launcher.draw(canvas, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         batch.end();
         launcher.update();
+
+        if (gameStarted && settingsSmokeCloseAtFrames > 0
+                && frames >= settingsSmokeCloseAtFrames) {
+            settingsSmokeCloseAtFrames = 0;
+            // The launcher's own back button: same rect as our overlay (LauncherScreen.backButton).
+            int x = (int) (OVERLAY_LEFT + OVERLAY_WIDTH / 2f);
+            int y = (int) (OVERLAY_TOP + OVERLAY_HEIGHT / 2f);
+            Gdx.app.log("framework2d", "smoke: tapping the launcher back button;");
+            launcher.touchDown(x, y, 0, 0);
+            launcher.touchUp(x, y, 0, 0);
+        }
     }
 
     /**
@@ -364,6 +473,9 @@ public class CheckersGame extends Game {
         }
         if (backToMenuButton != null) {
             backToMenuButton.dispose();
+        }
+        if (settingsButton != null) {
+            settingsButton.dispose();
         }
         if (batch != null) {
             batch.dispose();

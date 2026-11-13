@@ -36,6 +36,8 @@ public final class DesktopLauncher {
                     String rest = value.substring(colon + 1);
                     if ("about".equals(rest)) {
                         game.launcherAutoOpenAbout = true;
+                    } else if ("settings".equals(rest)) {
+                        game.launcherAutoOpenSettings = true;
                     } else if ("tests".equals(rest)) {
                         game.launcherAutoSelectTests = true;
                     } else if (rest.startsWith("tests:")) {
@@ -60,6 +62,9 @@ public final class DesktopLauncher {
                 game.dragSmoke = true;
             } else if (arg.startsWith("--back-after=")) {
                 game.backSmokeAfterFrames = Integer.parseInt(arg.substring("--back-after=".length()));
+            } else if (arg.startsWith("--settings-after=")) {
+                game.settingsSmokeAfterFrames =
+                        Integer.parseInt(arg.substring("--settings-after=".length()));
             }
         }
 

@@ -8,22 +8,18 @@ import ru.framework2d.compat.RectF;
 import ru.framework2d.core.GameResources;
 
 /**
- * The "< Back" overlay shown on the running game screen: the same carved plank button as the
- * launcher's sub-screens, tapping it returns to the main menu (the app shell owns the tap,
- * the engine never sees it).
+ * A carved plank button drawn over the running game screen ("< Back", "Settings"): the same
+ * art and placement rules as the launcher buttons, sized and placed like
+ * {@code LauncherScreen}'s own back button so all screens read as one UI.
  *
- * Sized and placed exactly like {@code LauncherScreen}'s own back button so the two screens
- * read as one UI.
+ * The app shell owns the tap: tapping one hands a message to the shell (return to menu, open
+ * settings), the engine never sees a half-tap under the button.
  */
-public class BackToMenuButton {
-
-    private static final float LEFT = 12f;
-    private static final float TOP = 12f;
-    private static final float WIDTH = 100f;
-    private static final float HEIGHT = 40f;
+public class OverlayButton {
 
     private final GameResources resources;
-    private final RectF bounds = new RectF(LEFT, TOP, LEFT + WIDTH, TOP + HEIGHT);
+    private final String label;
+    private final RectF bounds;
 
     private Bitmap unpressed;
     private Bitmap pressed;
@@ -34,8 +30,11 @@ public class BackToMenuButton {
     private final Paint labelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint fallbackPaint = new Paint();
 
-    public BackToMenuButton(GameResources resources) {
+    public OverlayButton(GameResources resources, String label, float left, float top,
+            float width, float height) {
         this.resources = resources;
+        this.label = label;
+        this.bounds = new RectF(left, top, left + width, top + height);
         artPaint.setColor(Color.WHITE);
         labelPaint.setColor(ButtonArt.TEXT_COLOR);
     }
@@ -45,11 +44,11 @@ public class BackToMenuButton {
     }
 
     public float centerX() {
-        return bounds.left + WIDTH / 2f;
+        return bounds.left + bounds.width() / 2f;
     }
 
     public float centerY() {
-        return bounds.top + HEIGHT / 2f;
+        return bounds.top + bounds.height() / 2f;
     }
 
     /** Pressed look while the owning pointer is down (same feedback as the launcher buttons). */
@@ -61,14 +60,15 @@ public class BackToMenuButton {
         loadIfNeeded();
         Bitmap bitmap = pressedShown ? pressed : unpressed;
         if (bitmap != null && bitmap.texture != null) {
-            ButtonArt.draw(canvas, bitmap, bounds.left, bounds.top, WIDTH, HEIGHT, artPaint);
+            ButtonArt.draw(canvas, bitmap, bounds.left, bounds.top, bounds.width(),
+                    bounds.height(), artPaint);
         } else {
             fallbackPaint.setColor(pressedShown
                     ? Color.argb(255, 55, 80, 130) : Color.argb(255, 70, 100, 160));
             canvas.drawRect(bounds.left, bounds.top, bounds.right, bounds.bottom, fallbackPaint);
         }
-        ButtonArt.drawLabel(canvas, labelPaint, "< Back", bounds.left, bounds.top, WIDTH, HEIGHT,
-                HEIGHT * 0.42f);
+        ButtonArt.drawLabel(canvas, labelPaint, label, bounds.left, bounds.top, bounds.width(),
+                bounds.height(), bounds.height() * 0.42f);
     }
 
     private void loadIfNeeded() {

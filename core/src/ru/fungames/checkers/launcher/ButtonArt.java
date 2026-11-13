@@ -22,6 +22,9 @@ final class ButtonArt {
     static final int SRC_HEIGHT = 630;
     static final int SRC_SLICE = 190;
 
+    /** Width / height of the source rect: a button keeps this aspect, or the plank stretches. */
+    static final float ASPECT = SRC_WIDTH / (float) SRC_HEIGHT;
+
     /**
      * The button art is a carved plank: a smooth band between two decorative carve rows carries
      * the label. Measuring the art, the band runs over the middle 0.30..0.65 of the nine-slice
@@ -89,25 +92,32 @@ final class ButtonArt {
 
     /**
      * Centres the label on the carved band. The caller owns the paint (its colour stays as set);
-     * only the text size is changed, shrunk until the estimate fits the carved width.
+     * only the text size is changed, shrunk until the real glyph advance fits the carved width
+     * ({@code Paint.measureText} is only a fallback when the canvas has no font metrics).
      */
     static void drawLabel(Canvas canvas, Paint paint, String label, float x, float y, float width,
             float height, float maxTextSize) {
         float size = maxTextSize;
         paint.setTextSize(size);
-        // Keep the label inside the carved edge of the button art. Paint.measureText is an estimate.
-        float maxTextWidth = width - Math.max(36f, width * 0.18f);
-        while (size > 10f && paint.measureText(label) * 1.25f > maxTextWidth) {
+        // Keep the label clear of the decorative ends of the plank.
+        float maxTextWidth = width - Math.max(48f, width * 0.24f);
+        float advance = measuredWidth(canvas, paint, label);
+        while (size > 10f && advance > maxTextWidth) {
             size -= 1f;
             paint.setTextSize(size);
+            advance = measuredWidth(canvas, paint, label);
         }
         // Centre on the real glyph advances: Paint.measureText is a character-count estimate, so
         // centring on it shifts short labels off the middle of the band.
-        float advance = canvas.textWidth(label, paint);
-        float textX = x + width / 2f - (advance > 0f ? advance : paint.measureText(label)) / 2f;
+        float textX = x + width / 2f - advance / 2f;
         // Baseline placed so the capitals straddle the carved band's centre: the drawText bridge
         // paints capitals about 0.7*size tall above the baseline, so half of that is below it.
         canvas.drawText(label, textX, y + height * FIELD_CENTER_Y + size * 0.35f, paint);
+    }
+
+    private static float measuredWidth(Canvas canvas, Paint paint, String label) {
+        float advance = canvas.textWidth(label, paint);
+        return advance > 0f ? advance : paint.measureText(label) * 1.25f;
     }
 
     private static void drawPart(Canvas canvas, Bitmap bitmap, Paint paint, int srcX, int srcY,

@@ -17,11 +17,14 @@ import ru.framework2d.core.GameResources;
 /**
  * Prototype launcher: a customizable preparation screen shown before the engine tree is built.
  *
- * MAIN  - game logo over the New Game / Continue / Tests / About buttons.
+ * MAIN  - game logo over the New Game / Continue / Settings / About buttons.
  * MAPS  - scrollable list of maps (game maps or test scenarios). A list entry is a plain
  *         button today; full preview + description comes later, so the entry layout keeps
  *         room for it.
  * ABOUT - build information.
+ * SETTINGS - graphical/audio options; placeholder rows today, the switches are not wired.
+ *            The shell can also open this screen over a running game (openSettingsOverlay);
+ *            then Back returns to the game instead of the main menu.
  *
  * Drawn through the compat Canvas like the engine's OutputDraw path; taps/scroll come straight
  * from libGDX input because the engine touch pipeline does not exist yet at this point.
@@ -31,13 +34,16 @@ public class LauncherScreen extends InputAdapter {
     public static final int SCREEN_MAIN = 0;
     public static final int SCREEN_ABOUT = 1;
     public static final int SCREEN_MAPS = 2;
+    public static final int SCREEN_SETTINGS = 3;
 
     private static final int BUTTON_NEW_GAME = 1;
     private static final int BUTTON_CONTINUE = 2;
-    private static final int BUTTON_TESTS = 3;
+    private static final int BUTTON_SETTINGS = 3;
     private static final int BUTTON_ABOUT = 4;
     private static final int BUTTON_BACK = 5;
     private static final int BUTTON_TOGGLE_LIST = 6;
+    /** Not yet wired: drawn dimmed, a tap does nothing (activate() has no case for it). */
+    private static final int BUTTON_SETTINGS_ROW = 7;
 
     private static final int BUTTON_NONE = -1;
 
@@ -59,8 +65,19 @@ public class LauncherScreen extends InputAdapter {
     private static final float MAIN_STACK_TOP = 0.34f;
     private static final float MAIN_STACK_BOTTOM = 0.90f;
 
+    /**
+     * Sub-screen planks (map toggle, settings rows) stop growing taller than this of the screen.
+     * Sized from the same width budget as the main stack this puts them at the main buttons' size
+     * in portrait, and keeps the map list's vertical budget in short windows.
+     */
+    private static final float SUB_PLANK_MAX_HEIGHT_RATIO = 0.115f;
+    private final float[] plankSizeScratch = new float[2];
+
     public interface MapChooser {
         void onMapChosen(String mapName);
+
+        /** The settings screen opened over a running game (openSettingsOverlay) was left. */
+        void onSettingsClosed();
     }
 
     private final GameResources resources;
@@ -87,6 +104,8 @@ public class LauncherScreen extends InputAdapter {
 
     private int screen = SCREEN_MAIN;
     private boolean showingTestMaps;
+    /** True while the settings screen is shown over a running game: Back returns to the game. */
+    private boolean settingsOverlayMode;
 
     private float scrollOffset;
     private float contentHeight;
@@ -115,6 +134,7 @@ public class LauncherScreen extends InputAdapter {
     private String autoSelectMapName;
     private boolean autoSelectTests;
     private boolean autoSelectAbout;
+    private boolean autoSelectSettings;
     private int autoScrollPixels;
 
     private final String preferredGameMap;
@@ -141,15 +161,17 @@ public class LauncherScreen extends InputAdapter {
 
     /**
      * Smoke helper: after the given number of drawn frames the launcher jumps to a screen.
-     * {@code about} opens the about screen; a named map file starts that map; otherwise the map
-     * list opens ({@code tests} picks the test-scenario list) and {@code scrollPixels} offsets it.
+     * {@code about}/{@code settings} open that screen; a named map file starts that map;
+     * otherwise the map list opens ({@code tests} picks the test-scenario list) and
+     * {@code scrollPixels} offsets it.
      */
     public void setAutoSelectMapAfterFrames(int frames, String mapFileName, boolean tests,
-            int scrollPixels, boolean about) {
+            int scrollPixels, boolean about, boolean settings) {
         autoSelectMapAfterFrames = frames;
         autoSelectMapName = mapFileName;
         autoSelectTests = tests;
         autoSelectAbout = about;
+        autoSelectSettings = settings;
         autoScrollPixels = scrollPixels;
     }
 
@@ -261,7 +283,7 @@ public class LauncherScreen extends InputAdapter {
     @Override
     public boolean keyDown(int keycode) {
         if (keycode == com.badlogic.gdx.Input.Keys.ESCAPE && screen != SCREEN_MAIN) {
-            showMain();
+            leaveSubScreen();
             return true;
         }
         return false;
@@ -278,7 +300,7 @@ public class LauncherScreen extends InputAdapter {
 
     private void handleTap(float x, float y) {
         if (backButton.width() > 0f && backButton.contains(x, y)) {
-            showMain();
+            leaveSubScreen();
             return;
         }
         for (int i = 0; i < frameButtonRects.size(); i++) {
@@ -315,14 +337,14 @@ public class LauncherScreen extends InputAdapter {
                     chooser.onMapChosen(lastPlayedMap);
                 }
                 break;
-            case BUTTON_TESTS:
-                openMapList(true);
+            case BUTTON_SETTINGS:
+                screen = SCREEN_SETTINGS;
                 break;
             case BUTTON_ABOUT:
                 screen = SCREEN_ABOUT;
                 break;
             case BUTTON_BACK:
-                showMain();
+                leaveSubScreen();
                 break;
             case BUTTON_TOGGLE_LIST:
                 collectMapsIfNeeded();
@@ -342,7 +364,26 @@ public class LauncherScreen extends InputAdapter {
     }
 
     private void showMain() {
+        settingsOverlayMode = false;
         screen = SCREEN_MAIN;
+    }
+
+    /**
+     * Show the settings screen over a running game: Back then returns to the game through
+     * {@code chooser.onSettingsClosed()} instead of going to the main menu.
+     */
+    public void openSettingsOverlay() {
+        settingsOverlayMode = true;
+        screen = SCREEN_SETTINGS;
+    }
+
+    private void leaveSubScreen() {
+        if (settingsOverlayMode && screen == SCREEN_SETTINGS) {
+            settingsOverlayMode = false;
+            chooser.onSettingsClosed();
+        } else {
+            showMain();
+        }
     }
 
     private void chooseMap(MapInfo info) {
@@ -372,6 +413,9 @@ public class LauncherScreen extends InputAdapter {
             case SCREEN_ABOUT:
                 drawAbout(canvas, width, height, margin, buttonWidth);
                 break;
+            case SCREEN_SETTINGS:
+                drawSettings(canvas, width, height, margin, buttonWidth);
+                break;
             default:
                 drawMain(canvas, width, height, margin, buttonWidth);
                 break;
@@ -384,6 +428,8 @@ public class LauncherScreen extends InputAdapter {
             autoSelectMapAfterFrames = 0;
             if (autoSelectAbout) {
                 screen = SCREEN_ABOUT;
+            } else if (autoSelectSettings) {
+                screen = SCREEN_SETTINGS;
             } else if (autoSelectMapName != null) {
                 showingTestMaps = autoSelectTests;
                 chooser.onMapChosen(autoSelectMapName.replaceFirst("\\.xml$", ""));
@@ -423,7 +469,7 @@ public class LauncherScreen extends InputAdapter {
         button(canvas, x, y, mainButtonWidth, mainButtonHeight, continueLabel(), BUTTON_CONTINUE,
                 lastPlayedMap != null, mainTextSize);
         y += mainButtonHeight + gap;
-        button(canvas, x, y, mainButtonWidth, mainButtonHeight, "Tests", BUTTON_TESTS, true,
+        button(canvas, x, y, mainButtonWidth, mainButtonHeight, "Settings", BUTTON_SETTINGS, true,
                 mainTextSize);
         y += mainButtonHeight + gap;
         button(canvas, x, y, mainButtonWidth, mainButtonHeight, "About", BUTTON_ABOUT, true,
@@ -523,13 +569,66 @@ public class LauncherScreen extends InputAdapter {
                 + " test scenarios", width / 2f, y + 54f, true);
     }
 
+    /**
+     * The settings entry point. The rows are drawn dimmed like a disabled Continue because the
+     * switches (graphics quality, direct shadows, sounds) are planned but not wired yet: a tap
+     * on a row does nothing and it never shows the pressed art. The test-scenario list that
+     * used to sit under the Settings slot is reached from the `show test scenarios` switch on
+     * the New Game map list.
+     */
+    private void drawSettings(Canvas canvas, float width, float height, float margin,
+            float buttonWidth) {
+        backButton(canvas);
+        drawTitle(canvas, "Settings", width, height * 0.16f, 30f, Color.WHITE);
+
+        // The rows are planks of the same aspect as every other carved button: width comes from
+        // the same budget as the main stack, height follows the art ratio, and a short window
+        // caps the height instead of squashing the plank.
+        plankSize(Math.min(buttonWidth, width * MAIN_BUTTON_WIDTH_RATIO),
+                height * SUB_PLANK_MAX_HEIGHT_RATIO, plankSizeScratch);
+        float rowWidth = plankSizeScratch[0];
+        float rowHeight = plankSizeScratch[1];
+        float rowGap = rowHeight * 0.25f;
+        float x = (width - rowWidth) / 2f;
+        float y = height * 0.26f;
+        String[] rows = {"Graphics quality", "Direct shadows", "Sounds"};
+        for (String row : rows) {
+            button(canvas, x, y, rowWidth, rowHeight, row, BUTTON_SETTINGS_ROW, false,
+                    rowHeight * 0.42f);
+            y += rowHeight + rowGap;
+        }
+        drawText(canvas, smallPaint, "options are not wired yet - placeholders", width / 2f,
+                height * 0.94f, true);
+    }
+
+    /**
+     * Largest carved-button size fitting both limits while keeping the art aspect: width is
+     * {@code maxWidth} unless the matching height would exceed {@code maxHeight}, in which case
+     * the height is capped and the width follows the ratio. Result goes into {@code out}
+     * as {width, height}.
+     */
+    private static void plankSize(float maxWidth, float maxHeight, float[] out) {
+        float width = maxWidth;
+        float height = width / ButtonArt.ASPECT;
+        if (height > maxHeight) {
+            height = maxHeight;
+            width = height * ButtonArt.ASPECT;
+        }
+        out[0] = width;
+        out[1] = height;
+    }
+
     private void drawMapList(Canvas canvas, float width, float height, float margin, float buttonWidth) {
         backButton(canvas);
         drawTitle(canvas, showingTestMaps ? "Test scenarios" : "New game",
                 width, height * 0.075f, 26f, Color.WHITE);
 
-        float toggleHeight = height * 0.05f;
-        float toggleBottom = button(canvas, margin, height * 0.10f, buttonWidth, toggleHeight,
+        // A plank at the art's own aspect ratio (never stretched); capped so the list keeps
+        // its vertical budget on short windows.
+        plankSize(Math.min(buttonWidth, width * MAIN_BUTTON_WIDTH_RATIO),
+                height * SUB_PLANK_MAX_HEIGHT_RATIO, plankSizeScratch);
+        float toggleBottom = button(canvas, (width - plankSizeScratch[0]) / 2f, height * 0.10f,
+                plankSizeScratch[0], plankSizeScratch[1],
                 showingTestMaps ? "show game maps" : "show test scenarios", BUTTON_TOGGLE_LIST, true);
 
         listTop = toggleBottom + margin * 0.25f;
@@ -627,8 +726,10 @@ public class LauncherScreen extends InputAdapter {
     // --------------------------------------------------------------- widgets
 
     private void backButton(Canvas canvas) {
-        button(canvas, 12f, 12f, 100f, 40f, "< Back", BUTTON_BACK, true);
-        backButton.set(12f, 12f, 112f, 52f);
+        // Height fixed by the corner art; width keeps the plank aspect (40 * 2.62), so the
+        // button is never a squashed or stretched plank. Matches CheckersGame's overlay buttons.
+        button(canvas, 12f, 12f, 105f, 40f, "< Back", BUTTON_BACK, true);
+        backButton.set(12f, 12f, 117f, 52f);
     }
 
     private float button(Canvas canvas, float x, float y, float width, float height,
