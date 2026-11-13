@@ -88,6 +88,12 @@
             <context name = "isExist" value = "exist"/>
             <context name = "finishedRoundTrigger" value = "finishRound"/>
         </handler>
+
+        <handler subpackage = "classes" engineName = "HandlerUnitClasses">
+            <context name = "actionStarted" value = "directImpulse"/>
+            <context name = "wasAttacked" value = "collision"/>
+            <context name = "remainsOnBoard" value = "exist"/>
+        </handler>
     </direct>
     
     
@@ -304,6 +310,8 @@
 				
 				<ownership ownerName = "p1"/>
 				
+				<infantry/>
+				
 				<item name = "white_checker" gridName = "white_respawn"/>
 				
 				<l_respawn respawnerName = "white_respawner"/>
@@ -384,6 +392,8 @@
 				<unit fieldName = "board"/>
 				
 				<ownership ownerName = "p2"/>
+				
+				<infantry/>
 				
 				<item name = "black_checker" gridName = "black_respawn"/>
 				
