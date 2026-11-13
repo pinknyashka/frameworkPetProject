@@ -18,8 +18,7 @@
          shadow geometry can be measured straight off a smoke screenshot.
          Light is at (120,120) with height 200, so every shadow is stretched
          down/right, away from the light, by lightZ / (lightZ - casterHeight).
-         Shadows use layer 5 here only so the full semi-transparent silhouette can be
-         measured without sprite occlusion; checkers_tree keeps shadow layer 0. -->
+         Shadows use layer 0, below the caster sprites, exactly like checkers_tree. -->
 
     <entity name = "background" single = "true">
         <pict spriteName = "board" layer = "-1"
@@ -41,7 +40,7 @@
          the shaded band runs to ~346 from the light along the 45 deg ray -->
     <entity name = "cyl_r40_h30" single = "true">
         <shadow position:x = "300" position:y = "300" position:z = "0"
-            layer = "5" isRotatable = "false" localTransparency = "0.6"
+            layer = "0" isRotatable = "false" localTransparency = "0.6"
             geometry:type = "v_cylinder" geometry:radius = "40" geometry:height = "30"/>
         <pict spriteName = "infantry_dark" layer = "2"
             position:x = "300" position:y = "300"
@@ -51,7 +50,7 @@
     <!-- caster 2: block 80x80 h30 at (470,250) -->
     <entity name = "block_w80_d80_h30" single = "true">
         <shadow position:x = "470" position:y = "250" position:z = "0"
-            layer = "5" isRotatable = "false" localTransparency = "0.6"
+            layer = "0" isRotatable = "false" localTransparency = "0.6"
             geometry:type = "block" geometry:width = "80" geometry:depth = "80" geometry:height = "30"/>
         <pict spriteName = "infantry_light" layer = "2"
             position:x = "470" position:y = "250"
@@ -62,7 +61,7 @@
          ratio 200/140 = 1.43, caster distance 420.5 -->
     <entity name = "cyl_r30_h60" single = "true">
         <shadow position:x = "300" position:y = "500" position:z = "0"
-            layer = "5" isRotatable = "false" localTransparency = "0.6"
+            layer = "0" isRotatable = "false" localTransparency = "0.6"
             geometry:type = "v_cylinder" geometry:radius = "30" geometry:height = "60"/>
         <pict spriteName = "infantry_dark" layer = "2"
             position:x = "300" position:y = "500"
@@ -72,7 +71,7 @@
     <!-- caster 4: low block -> shadow almost coincides with the footprint -->
     <entity name = "block_w60_d100_h10" single = "true">
         <shadow position:x = "480" position:y = "680" position:z = "0"
-            layer = "5" isRotatable = "false" localTransparency = "0.6"
+            layer = "0" isRotatable = "false" localTransparency = "0.6"
             geometry:type = "block" geometry:width = "60" geometry:depth = "100" geometry:height = "10"/>
         <pict spriteName = "infantry_dark" layer = "2"
             position:x = "480" position:y = "680"

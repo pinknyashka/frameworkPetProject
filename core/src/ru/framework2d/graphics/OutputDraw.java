@@ -63,6 +63,7 @@ public class OutputDraw extends Engine implements GraphicalPeriphery {
 		isDrawingProgress = true;
 		
 		try {
+			GraphicalDrawOrder.sort(lstGraphicals);
 			graphicalsNum = lstGraphicals.size();
 			
 			for (int graphicalNo = 0; graphicalNo < graphicalsNum; graphicalNo++) {

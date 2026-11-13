@@ -89,6 +89,7 @@ public abstract class OutputGraphicalInterface extends Component {
 			
 			selfDraw();
 			
+			GraphicalDrawOrder.sort(lstChildren);
 			for (OutputGraphicalInterface graphical : lstChildren) {
 				graphical.draw(canvas, paint);
 			}
