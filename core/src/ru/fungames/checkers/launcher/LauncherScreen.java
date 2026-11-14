@@ -751,7 +751,7 @@ public class LauncherScreen extends InputAdapter {
             canvas.drawRect(x, y, x + width, y + height, fillPaint);
         }
 
-        textPaint.setColor(enabled ? ButtonArt.TEXT_COLOR : ButtonArt.DISABLED_TEXT_COLOR);
+        textPaint.setColor(enabled ? ButtonArt.LABEL_FILL : ButtonArt.LABEL_FILL_DISABLED);
         ButtonArt.drawLabel(canvas, textPaint, label, x, y, width, height, maxTextSize);
         textPaint.setTextSize(24f);
         frameButtonRects.add(new RectF(x, y, x + width, y + height));

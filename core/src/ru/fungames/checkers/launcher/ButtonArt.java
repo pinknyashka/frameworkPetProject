@@ -34,13 +34,28 @@ final class ButtonArt {
      */
     static final float FIELD_CENTER_Y = 0.47f;
 
-    /** Dark ink for the label carved into the light plank. */
-    static final int TEXT_COLOR = Color.rgb(55, 30, 16);
-    static final int DISABLED_TEXT_COLOR = Color.argb(190, 55, 30, 16);
+    /**
+     * Label colours, following the art/Buttons/stock/Readable_font.png sample: light cream
+     * glyphs, a thick dark-brown outline ring and a soft drop shadow. Dark ink printed onto
+     * the wood texture (the previous style) loses its thin strokes to the grain at phone
+     * sizes; outlined cream survives it.
+     */
+    static final int LABEL_FILL = Color.rgb(250, 243, 224);
+    static final int LABEL_FILL_DISABLED = Color.argb(230, 250, 243, 224);
+
+    private static final int LABEL_OUTLINE = Color.rgb(84, 44, 18);
+    private static final int LABEL_SHADOW = Color.argb(150, 30, 14, 5);
 
     // Draw scratch shared by all callers: drawing is single-threaded, one draw at a time.
     private static final Rect nineSrc = new Rect();
     private static final RectF nineDst = new RectF();
+    private static final Paint outlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private static final Paint shadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+    static {
+        outlinePaint.setColor(LABEL_OUTLINE);
+        shadowPaint.setColor(LABEL_SHADOW);
+    }
 
     private ButtonArt() {
     }
@@ -91,18 +106,22 @@ final class ButtonArt {
     }
 
     /**
-     * Centres the label on the carved band. The caller owns the paint (its colour stays as set);
-     * only the text size is changed, shrunk until the real glyph advance fits the carved width
-     * ({@code Paint.measureText} is only a fallback when the canvas has no font metrics).
+     * Centres the label on the carved band and paints it the way the reference art does:
+     * uppercase cream glyphs over a dark outline ring and a soft drop shadow, which keeps the
+     * text legible over the wood grain at phone pixel sizes. The caller owns the fill paint
+     * (its colour stays as set); only the text size is changed, shrunk until the real glyph
+     * advance plus the outline spread fits the carved width ({@code Paint.measureText} is only
+     * a fallback when the canvas has no font metrics).
      */
     static void drawLabel(Canvas canvas, Paint paint, String label, float x, float y, float width,
             float height, float maxTextSize) {
+        label = label.toUpperCase(java.util.Locale.ROOT);
         float size = maxTextSize;
         paint.setTextSize(size);
         // Keep the label clear of the decorative ends of the plank.
         float maxTextWidth = width - Math.max(48f, width * 0.24f);
         float advance = measuredWidth(canvas, paint, label);
-        while (size > 10f && advance > maxTextWidth) {
+        while (size > 10f && advance + 2f * outlineSpread(size) > maxTextWidth) {
             size -= 1f;
             paint.setTextSize(size);
             advance = measuredWidth(canvas, paint, label);
@@ -112,7 +131,26 @@ final class ButtonArt {
         float textX = x + width / 2f - advance / 2f;
         // Baseline placed so the capitals straddle the carved band's centre: the drawText bridge
         // paints capitals about 0.7*size tall above the baseline, so half of that is below it.
-        canvas.drawText(label, textX, y + height * FIELD_CENTER_Y + size * 0.35f, paint);
+        float baseline = y + height * FIELD_CENTER_Y + size * 0.35f;
+        float spread = outlineSpread(size);
+
+        shadowPaint.setTextSize(size);
+        canvas.drawText(label, textX + spread, baseline + spread, shadowPaint);
+        outlinePaint.setTextSize(size);
+        for (int dy = -1; dy <= 1; dy++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                if (dx == 0 && dy == 0) {
+                    continue;
+                }
+                canvas.drawText(label, textX + dx * spread, baseline + dy * spread, outlinePaint);
+            }
+        }
+        canvas.drawText(label, textX, baseline, paint);
+    }
+
+    /** Outline ring radius and shadow offset: about 8% of the text size, at least 2 px. */
+    private static float outlineSpread(float textSize) {
+        return Math.max(2f, textSize * 0.08f);
     }
 
     private static float measuredWidth(Canvas canvas, Paint paint, String label) {

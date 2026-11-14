@@ -36,7 +36,7 @@ public class OverlayButton {
         this.label = label;
         this.bounds = new RectF(left, top, left + width, top + height);
         artPaint.setColor(Color.WHITE);
-        labelPaint.setColor(ButtonArt.TEXT_COLOR);
+        labelPaint.setColor(ButtonArt.LABEL_FILL);
     }
 
     public boolean contains(float x, float y) {
